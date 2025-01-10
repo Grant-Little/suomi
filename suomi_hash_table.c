@@ -5,7 +5,9 @@
 #define SM_HASH_FNV_OFFSET_32 2166136261u
 #define SM_HASH_LOAD_FACTOR 70u
 
-uint32_t smFnv1aHash32(const void *data, size_t data_num_bytes) {
+uint32_t smHashInternalProbe(const smHashTable *hash_table, uint32_t hash, uint32_t index);
+
+uint32_t smHashFnv1a32(const void *data, size_t data_num_bytes) {
     uint32_t hash = SM_HASH_FNV_OFFSET_32;
 
     for (size_t i = 0; i < data_num_bytes; i++) {
@@ -33,11 +35,12 @@ smHashTable smHashTableInit(smArena *arena, size_t value_num_bytes, size_t expec
     if (!push_result) {
         return hash_table;
     } else {
+        memset((void *)push_result, 0, table_max_num_entries * 4);
         hash_table.hashes = (uint32_t *)push_result;
         hash_table.values = (table_max_num_entries * 4) + push_result;
         hash_table.value_num_bytes = value_num_bytes;
         hash_table.max_num_entries = table_max_num_entries;
-        hash_table.hash_function = smFnv1aHash32;
+        hash_table.hash_function = smHashFnv1a32;
         return hash_table;
     }
 }
@@ -54,4 +57,69 @@ void smHashTableDeinit(smHashTable *hash_table) {
 void smHashTableClear(smHashTable *hash_table) {
     memset(hash_table->hashes, 0, hash_table->max_num_entries * 4);
     hash_table->num_current_entries = 0;
+}
+
+bool smHashTableSet(smHashTable *hash_table, const void *key, size_t key_num_bytes, const void *value) {
+    if (hash_table->num_current_entries >= hash_table->max_num_entries) {
+        return false;
+    }
+
+    uint32_t hash = hash_table->hash_function(key, key_num_bytes);
+    uint32_t index = hash % hash_table->max_num_entries;
+
+    if (hash_table->hashes[index] != 0 && hash_table->hashes[index] != hash) {
+        index = smHashInternalProbe(hash_table, hash, index);
+    }
+
+    hash_table->hashes[index] = hash;
+    memcpy((void *)(hash_table->values + index * hash_table->value_num_bytes), value, hash_table->value_num_bytes);
+    hash_table->num_current_entries++;
+    return true;
+}
+
+void *smHashTableRetrieve(const smHashTable *hash_table, const void *key, size_t key_num_bytes) {
+    uint32_t hash = hash_table->hash_function(key, key_num_bytes);
+    uint32_t index = hash % hash_table->max_num_entries;
+
+    if (hash_table->hashes[index] != 0 && hash_table->hashes[index] != hash) {
+        index = smHashInternalProbe(hash_table, hash, index);
+    }
+
+    return (void *)(hash_table->values + index * hash_table->value_num_bytes);
+}
+
+void smHashTableRemove(smHashTable *hash_table, const void *key, size_t key_num_bytes) {
+    // this is way more fucking complicated than i thought
+    if (hash_table->num_current_entries == 0) {
+        return;
+    }
+
+    uint32_t hash = hash_table->hash_function(key, key_num_bytes);
+    uint32_t index = hash % hash_table->max_num_entries;
+
+    if (hash_table->hashes[index] == UINT32_MAX) {
+        return;
+    }
+
+    if (hash_table->hashes[index] != 0 && hash_table->hashes[index] != hash) {
+        index = smHashInternalProbe(hash_table, hash, index);
+    }
+
+    hash_table->num_current_entries--;
+}
+
+uint32_t smHashInternalProbe(const smHashTable *hash_table, uint32_t hash, uint32_t index) {
+    uint32_t internal_probe = hash % (hash_table->max_num_entries - 1);
+    while (true) {
+        index += internal_probe;
+        if (index >= hash_table->max_num_entries) {
+            index -= hash_table->max_num_entries;
+        }
+        if (hash_table->hashes[index] != 0 && hash_table->hashes[index] != hash) {
+            internal_probe++;
+        } else {
+            break;
+        }
+    }
+    return index;
 }
