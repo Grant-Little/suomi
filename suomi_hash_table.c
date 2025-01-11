@@ -31,7 +31,7 @@ uint32_t smHashFnv1a32(const void *data, size_t data_num_bytes) {
 }
 
 uint32_t smHashDjb32(const void *data, size_t data_num_bytes) {
-    uint32_t hash = SM_HASH_DFB_OFFSET_32;
+    uint32_t hash = SM_HASH_DJB_OFFSET_32;
 
     for (size_t i = 0; i < data_num_bytes; i++) {
         hash = ((hash << SM_HASH_DJB_SHIFT_32) + hash) + ((uint8_t *)(data))[i];
