@@ -49,23 +49,4 @@ size_t smStringFindCstring(const smString *searched_string, size_t search_index,
 size_t smStringFindString(const smString *searched_string, size_t search_index, size_t search_length, const smString *find_string);
 size_t smStringFindSubString(const smString *searched_string, size_t search_index, size_t search_length, const smString *sub_string, size_t sub_string_index, size_t sub_string_length);
 
-
-// check if string is alphanumeric etc
-// search on index and length, 0 and 0 would be the whole string
-
-#define SM_STRING_NUMERIC 0x001 // 48-57
-#define SM_STRING_LOWERCASE 0x0002 // 97-122
-#define SM_STRING_UPPERCASE 0x0004 // 65-90
-#define SM_SIRING_ALPHABETICAL 0x0006
-#define SM_STRING_ALPHANUMERIC 0x0007
-#define SM_STRING_WHITESPACE 0x0008 // 32, 9-12
-#define SM_STRING_PUNCTUATION 0x0010 // 32-64, 91-96, 123-126
-#define SM_STRING_BRACKETS 0x0020 // 40, 41, 60, 62, 91, 93, 123, 125
-#define SM_STRING_ARITHMETIC 0x0040 // 42, 43, 45, 47
-#define SM_STRING_ASCII_CONTROL 0x0080 // 0-32, 127
-#define SM_STRING_ASCII_PRINTABLE 0x0100 // 33-126
-#define SM_STRING_ASCII 0x0180
-
-bool smStringIsCategory(const smString *string, size_t index, size_t length, uint16_t string_categories);
-
 #endif

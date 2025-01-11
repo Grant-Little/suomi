@@ -30,7 +30,7 @@ void smArenaClear(smArena *arena) {
 }
 
 void *smArenaPush(smArena *arena, size_t num_bytes) {
-    if ((arena->current_pos + num_bytes) < arena->end_pos) {
+    if ((arena->current_pos + num_bytes) <= arena->end_pos) {
         arena->current_pos += num_bytes;
         return (void *)(arena->current_pos - num_bytes);
     } else {
