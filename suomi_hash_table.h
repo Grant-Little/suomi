@@ -15,6 +15,9 @@ typedef struct {
 // default hash function
 uint32_t smHashFnv1a32(const void *data, size_t data_num_bytes);
 
+// extra hash functions
+uint32_t smHashDjb32(const void *data, size_t data_num_bytes);
+
 smHashTable smHashTableInit(smArena *arena, size_t value_num_bytes, size_t expected_num_values);
 void smHashTableDeinit(smHashTable *hash_table);
 void smHashTableClear(smHashTable *hash_table);
