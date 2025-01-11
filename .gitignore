@@ -4,3 +4,8 @@
 !README.md
 !suomi_*.c
 !suomi_*.h
+
+!examples/
+examples/*
+!examples/*.c
+!examples/build_examples.sh
