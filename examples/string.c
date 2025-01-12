@@ -17,5 +17,15 @@ int main() {
     index = smStringFindCstring(&string1, 2, 0, "string");
     assert(index == 12);
 
+    smString string4 = smStringInitWithContents(&arena, "stringaaaa", 256);
+    smString string5 = smStringInitWithContents(&arena, "bbbbstring", 256);
+
+    exit = smStringRemove(&string4, 6, 4);
+    assert(exit == 0);
+    exit = smStringRemove(&string5, 0, 4);
+    assert(exit == 0);
+
+    assert(smStringAreContentsSame(&string4, &string5) == true);
+
     return 0;
 }

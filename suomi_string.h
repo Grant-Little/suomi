@@ -38,6 +38,7 @@ int smStringCopySubString(smString *dest_string, const smString *sub_string, siz
 int smStringWriteCstringAtIndex(smString *dest_string, size_t dest_index, const char *cstring);
 int smStringWriteStringAtIndex(smString *dest_string, size_t dest_index, const smString *source_string);
 int smStringWriteSubStringAtIndex(smString *dest_string, size_t dest_index, const smString *sub_string, size_t sub_string_index, size_t sub_string_length);
+int smStringRemove(smString *string, size_t index, size_t length);
 int smStringPush(smString *string, char character);
 char smStringPop(smString *string);
 

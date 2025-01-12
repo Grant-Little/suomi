@@ -3,7 +3,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#define SM_STRING_IS_VALID_SUB_STRING(sub_string, sub_string_index, sub_string_length) (sub_string_index < sub_string->length || (sub_string_index + sub_string_length) <= sub_string->length)
+#define SM_STRING_IS_VALID_SUB_STRING(sub_string, sub_string_index, sub_string_length) (sub_string_index < sub_string->length && (sub_string_index + sub_string_length) <= sub_string->length)
 
 void smStringPuts(const smString *string) {
     for (size_t i = 0; i < string->length; i++) {
@@ -174,6 +174,23 @@ int smStringWriteSubStringAtIndex(smString *dest_string, size_t dest_index, cons
         if (dest_string->length < (sub_string_length + dest_index)) {
             dest_string->length = sub_string_length + dest_index;
         }
+        return EXIT_SUCCESS;
+    }
+}
+
+int smStringRemove(smString *string, size_t index, size_t length) {
+    if (length == 0) {
+        length = string->length - index;
+    }
+
+    if (!SM_STRING_IS_VALID_SUB_STRING(string, index, length)) {
+        return EXIT_FAILURE;
+    } else if ((index + length) == string->length) {
+        string->length = index;
+        return EXIT_SUCCESS;
+    } else {
+        memcpy((string->contents + index), (string->contents + index + length), (string->length - (index + length)));
+        string->length -= length;
         return EXIT_SUCCESS;
     }
 }
