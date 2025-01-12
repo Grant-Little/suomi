@@ -3,11 +3,11 @@
 
 int main() {
     smArena arena = smArenaInit(10000);
-    bool result = false;
+    int exit;
 
     smString string1 = smStringInit(&arena, 256);
-    result = smStringAppendCstring(&string1, "contents of string1");
-    assert(result == true);
+    exit = smStringAppendCstring(&string1, "contents of string1");
+    assert(exit == 0);
 
     smString string2 = smStringInitWithContents(&arena, "contents of string2", 256);
     smString string3 = smStringInitWithContents(&arena, "contents of string3", 0);

@@ -1,5 +1,6 @@
 #include "suomi_hash_table.h"
-#include "string.h"
+#include <string.h>
+#include <stdlib.h>
 
 #define SM_HASH_LOAD_FACTOR 70u
 
@@ -87,9 +88,9 @@ void smHashTableClear(smHashTable *hash_table) {
     hash_table->num_current_entries = 0;
 }
 
-bool smHashTableSet(smHashTable *hash_table, const void *key, size_t key_num_bytes, const void *value) {
+int smHashTableSet(smHashTable *hash_table, const void *key, size_t key_num_bytes, const void *value) {
     if (hash_table->num_current_entries >= hash_table->max_num_entries) {
-        return false;
+        return EXIT_FAILURE;
     }
 
     uint32_t hash = hash_table->hash_function(key, key_num_bytes);
@@ -102,7 +103,7 @@ bool smHashTableSet(smHashTable *hash_table, const void *key, size_t key_num_byt
     hash_table->hashes[index] = hash;
     memcpy((void *)(hash_table->values + index * hash_table->value_num_bytes), value, hash_table->value_num_bytes);
     hash_table->num_current_entries++;
-    return true;
+    return EXIT_SUCCESS;
 }
 
 void *smHashTableRetrieve(const smHashTable *hash_table, const void *key, size_t key_num_bytes) {
@@ -126,7 +127,7 @@ void smHashTableRemove(smHashTable *hash_table, const void *key, size_t key_num_
 
     uint32_t internal_probe = hash % (hash_table->max_num_entries - 1);
 
-    while (true) {
+    while (1) {
         if (hash_table->hashes[index] == hash) {
             hash_table->hashes[index] = UINT32_MAX;
             hash_table->num_current_entries--;
@@ -145,7 +146,7 @@ void smHashTableRemove(smHashTable *hash_table, const void *key, size_t key_num_
 
 uint32_t smHashInternalProbe(const smHashTable *hash_table, uint32_t hash, uint32_t index) {
     uint32_t internal_probe = hash % (hash_table->max_num_entries - 1);
-    while (true) {
+    while (1) {
         index += internal_probe;
         if (index >= hash_table->max_num_entries) {
             index -= hash_table->max_num_entries;

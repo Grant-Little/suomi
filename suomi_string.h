@@ -2,9 +2,8 @@
 #define SUOMI_STRING_H
 
 #include "suomi_arena.h"
-#include <stddef.h>
 #include <stdbool.h>
-#include <stdint.h>
+#include <stddef.h>
 
 typedef struct {
     char *contents;
@@ -30,16 +29,16 @@ bool smStringAreContentsSame(const smString *string1, const smString *string2);
 char smStringIndex(const smString *string, size_t index); //positive indices, return '\0' on invalid index
 
 // modifying strings
-bool smStringAppendCstring(smString *dest_string, const char *cstring);
-bool smStringAppendString(smString *dest_string, const smString *source_string);
-bool smStringAppendSubString(smString *dest_string, const smString *sub_string, size_t sub_string_index, size_t sub_string_length);
-bool smStringCopyCstring(smString *dest_string , const char *cstring);
-bool smStringCopyString(smString *dest_string, const smString *copied_string);
-bool smStringCopySubString(smString *dest_string, const smString *sub_string, size_t sub_string_index, size_t sub_string_length);
-bool smStringWriteCstringAtIndex(smString *dest_string, size_t dest_index, const char *cstring);
-bool smStringWriteStringAtIndex(smString *dest_string, size_t dest_index, const smString *source_string);
-bool smStringWriteSubStringAtIndex(smString *dest_string, size_t dest_index, const smString *sub_string, size_t sub_string_index, size_t sub_string_length);
-bool smStringPush(smString *string, char character);
+int smStringAppendCstring(smString *dest_string, const char *cstring);
+int smStringAppendString(smString *dest_string, const smString *source_string);
+int smStringAppendSubString(smString *dest_string, const smString *sub_string, size_t sub_string_index, size_t sub_string_length);
+int smStringCopyCstring(smString *dest_string , const char *cstring);
+int smStringCopyString(smString *dest_string, const smString *copied_string);
+int smStringCopySubString(smString *dest_string, const smString *sub_string, size_t sub_string_index, size_t sub_string_length);
+int smStringWriteCstringAtIndex(smString *dest_string, size_t dest_index, const char *cstring);
+int smStringWriteStringAtIndex(smString *dest_string, size_t dest_index, const smString *source_string);
+int smStringWriteSubStringAtIndex(smString *dest_string, size_t dest_index, const smString *sub_string, size_t sub_string_index, size_t sub_string_length);
+int smStringPush(smString *string, char character);
 char smStringPop(smString *string);
 
 // search for first occurence, provide index and length to search, return SIZE_MAX if not found, 0 search_length is taken as searched_string->length

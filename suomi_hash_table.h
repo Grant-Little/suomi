@@ -1,7 +1,9 @@
+#ifndef SUOMI_HASH_TABLE_H
+#define SUOMI_HASH_TABLE_H
+
 #include "suomi_arena.h"
-#include <stddef.h>
-#include <stdbool.h>
 #include <stdint.h>
+#include <stddef.h>
 
 typedef struct {
     uint32_t *hashes;
@@ -22,6 +24,8 @@ smHashTable smHashTableInit(smArena *arena, size_t value_num_bytes, size_t expec
 void smHashTableDeinit(smHashTable *hash_table);
 void smHashTableClear(smHashTable *hash_table);
 
-bool smHashTableSet(smHashTable *hash_table, const void *key, size_t key_num_bytes, const void *value);
+int smHashTableSet(smHashTable *hash_table, const void *key, size_t key_num_bytes, const void *value);
 void *smHashTableRetrieve(const smHashTable *hash_table, const void *key, size_t key_num_bytes);
 void smHashTableRemove(smHashTable *hash_table, const void *key, size_t key_num_bytes);
+
+#endif

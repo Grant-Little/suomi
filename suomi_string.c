@@ -1,6 +1,7 @@
 #include "suomi_string.h"
 #include <string.h>
 #include <stdio.h>
+#include <stdlib.h>
 
 #define SM_STRING_IS_VALID_SUB_STRING(sub_string, sub_string_index, sub_string_length) (sub_string_index < sub_string->length || (sub_string_index + sub_string_length) <= sub_string->length)
 
@@ -87,103 +88,103 @@ char smStringIndex(const smString *string, size_t index) {
     }
 }
 
-bool smStringAppendCstring(smString *dest_string, const char *cstring) {
+int smStringAppendCstring(smString *dest_string, const char *cstring) {
     size_t cstring_length = strlen(cstring);
     if ((dest_string->length + cstring_length) > dest_string->capacity) {
-        return false;
+        return EXIT_FAILURE;
     } else {
         memcpy((dest_string->contents + dest_string->length), cstring, cstring_length);
         dest_string->length += cstring_length;
-        return true;
+        return EXIT_SUCCESS;
     }
 }
 
-bool smStringAppendString(smString *dest_string, const smString *source_string) {
+int smStringAppendString(smString *dest_string, const smString *source_string) {
     return smStringAppendSubString(dest_string, source_string, 0, 0);
 }
 
-bool smStringAppendSubString(smString *dest_string, const smString *sub_string, size_t sub_string_index, size_t sub_string_length) {
+int smStringAppendSubString(smString *dest_string, const smString *sub_string, size_t sub_string_index, size_t sub_string_length) {
     if (sub_string_length == 0) {
         sub_string_length = sub_string->length - sub_string_index;
     }
 
     if ((dest_string->length + sub_string_length) > dest_string->capacity || !SM_STRING_IS_VALID_SUB_STRING(sub_string, sub_string_index, sub_string_length)) {
-        return false;
+        return EXIT_FAILURE;
     } else {
         memcpy((dest_string->contents + dest_string->length), (sub_string->contents + sub_string_index), sub_string_length);
         dest_string->length += sub_string_length;
-        return true;
+        return EXIT_SUCCESS;
     }
 }
 
-bool smStringCopyCstring(smString *dest_string , const char *cstring) {
+int smStringCopyCstring(smString *dest_string , const char *cstring) {
     size_t cstring_length = strlen(cstring);
     if (dest_string->capacity < cstring_length) {
-        return false;
+        return EXIT_FAILURE;
     } else {
         memcpy(dest_string->contents, cstring, cstring_length);
         dest_string->length = cstring_length;
-        return true;
+        return EXIT_SUCCESS;
     }
 }
 
-bool smStringCopyString(smString *dest_string, const smString *copied_string) {
+int smStringCopyString(smString *dest_string, const smString *copied_string) {
     return smStringCopySubString(dest_string, copied_string, 0, 0);
 }
 
-bool smStringCopySubString(smString *dest_string, const smString *sub_string, size_t sub_string_index, size_t sub_string_length) {
+int smStringCopySubString(smString *dest_string, const smString *sub_string, size_t sub_string_index, size_t sub_string_length) {
     if (sub_string_length == 0) {
         sub_string_length = sub_string->length - sub_string_index;
     }
 
     if (dest_string->capacity < sub_string_length || !SM_STRING_IS_VALID_SUB_STRING(sub_string, sub_string_index, sub_string_length)) {
-        return false;
+        return EXIT_FAILURE;
     } else {
         memcpy(dest_string->contents, (sub_string->contents + sub_string_index), sub_string_length);
         dest_string->length = sub_string_length;
-        return true;
+        return EXIT_SUCCESS;
     }
 }
 
-bool smStringWriteCstringAtIndex(smString *dest_string, size_t dest_index, const char *cstring) {
+int smStringWriteCstringAtIndex(smString *dest_string, size_t dest_index, const char *cstring) {
     size_t cstring_length = strlen(cstring);
     if ((dest_index + cstring_length) > dest_string->capacity) {
-        return false;
+        return EXIT_FAILURE;
     } else {
         memcpy((dest_string->contents + dest_index), cstring, cstring_length);
         if (dest_string->length < (cstring_length + dest_index)) {
             dest_string->length = cstring_length + dest_index;
         }
-        return true;
+        return EXIT_SUCCESS;
     }
 }
-bool smStringWriteStringAtIndex(smString *dest_string, size_t dest_index, const smString *source_string) {
+int smStringWriteStringAtIndex(smString *dest_string, size_t dest_index, const smString *source_string) {
     return smStringWriteSubStringAtIndex(dest_string, dest_index, source_string, 0, 0);
 }
 
-bool smStringWriteSubStringAtIndex(smString *dest_string, size_t dest_index, const smString *sub_string, size_t sub_string_index, size_t sub_string_length) {
+int smStringWriteSubStringAtIndex(smString *dest_string, size_t dest_index, const smString *sub_string, size_t sub_string_index, size_t sub_string_length) {
     if (sub_string_length == 0) {
         sub_string_length = sub_string->length - sub_string_index;
     }
 
     if ((dest_index + sub_string_length) > dest_string->capacity || !SM_STRING_IS_VALID_SUB_STRING(sub_string, sub_string_index, sub_string_length)) {
-        return false;
+        return EXIT_FAILURE;
     } else {
         memcpy((dest_string->contents + dest_index), (sub_string->contents + sub_string_index), sub_string_length);
         if (dest_string->length < (sub_string_length + dest_index)) {
             dest_string->length = sub_string_length + dest_index;
         }
-        return true;
+        return EXIT_SUCCESS;
     }
 }
 
-bool smStringPush(smString *string, char character) {
+int smStringPush(smString *string, char character) {
     if ((string->length) >= (string->capacity)) {
-        return false;
+        return EXIT_FAILURE;
     } else {
         *(string->contents + string->length) = character;
         string->length++;
-        return true;
+        return EXIT_SUCCESS;
     }
 }
 
