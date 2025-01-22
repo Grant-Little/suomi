@@ -61,17 +61,18 @@ smHashTable smHashTableInit(smArena *arena, size_t value_num_bytes, size_t expec
     size_t bytes_to_push = table_max_num_entries * (value_num_bytes + 4);
 
     uintptr_t push_result = (uintptr_t)smArenaPush(arena, bytes_to_push);
+#ifndef SM_ASSURE
     if (!push_result) {
         return hash_table;
-    } else {
-        memset((void *)push_result, 0, table_max_num_entries * 4);
-        hash_table.hashes = (uint32_t *)push_result;
-        hash_table.values = (table_max_num_entries * 4) + push_result;
-        hash_table.value_num_bytes = value_num_bytes;
-        hash_table.max_num_entries = table_max_num_entries;
-        hash_table.hash_function = smHashFnv1a32;
-        return hash_table;
     }
+#endif
+    memset((void *)push_result, 0, table_max_num_entries * 4);
+    hash_table.hashes = (uint32_t *)push_result;
+    hash_table.values = (table_max_num_entries * 4) + push_result;
+    hash_table.value_num_bytes = value_num_bytes;
+    hash_table.max_num_entries = table_max_num_entries;
+    hash_table.hash_function = smHashFnv1a32;
+    return hash_table;
 }
 
 void smHashTableDeinit(smHashTable *hash_table) {
@@ -89,10 +90,11 @@ void smHashTableClear(smHashTable *hash_table) {
 }
 
 int smHashTableSet(smHashTable *hash_table, const void *key, size_t key_num_bytes, const void *value) {
+#ifndef SM_ASSURE
     if (hash_table->num_current_entries >= hash_table->max_num_entries) {
         return EXIT_FAILURE;
     }
-
+#endif
     uint32_t hash = hash_table->hash_function(key, key_num_bytes);
     uint32_t index = hash % hash_table->max_num_entries;
 
@@ -118,10 +120,11 @@ void *smHashTableRetrieve(const smHashTable *hash_table, const void *key, size_t
 }
 
 void smHashTableRemove(smHashTable *hash_table, const void *key, size_t key_num_bytes) {
+#ifndef SM_ASSURE
     if (hash_table->num_current_entries == 0) {
         return;
     }
-
+#endif
     uint32_t hash = hash_table->hash_function(key, key_num_bytes);
     uint32_t index = hash % hash_table->max_num_entries;
 
@@ -142,6 +145,7 @@ void smHashTableRemove(smHashTable *hash_table, const void *key, size_t key_num_
             internal_probe++;
         }
     }
+    return;
 }
 
 uint32_t smHashInternalProbe(const smHashTable *hash_table, uint32_t hash, uint32_t index) {
