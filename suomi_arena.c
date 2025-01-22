@@ -9,9 +9,11 @@ smArena smArenaInit(size_t num_bytes) {
     };
 
     arena.start_pos = (uintptr_t)malloc(num_bytes);
+#ifndef SM_ASSURE
     if (!arena.start_pos) {
         return arena;
     }
+#endif
     arena.end_pos = arena.start_pos + num_bytes;
     arena.current_pos = arena.start_pos;
 
@@ -30,12 +32,13 @@ void smArenaClear(smArena *arena) {
 }
 
 void *smArenaPush(smArena *arena, size_t num_bytes) {
-    if ((arena->current_pos + num_bytes) <= arena->end_pos) {
-        arena->current_pos += num_bytes;
-        return (void *)(arena->current_pos - num_bytes);
-    } else {
+#ifndef SM_ASSURE
+    if ((arena->current_pos + num_bytes) > arena->end_pos) {
         return NULL;
     }
+#endif
+    arena->current_pos += num_bytes;
+    return (void *)(arena->current_pos - num_bytes);
 }
 
 void smArenaPop(smArena *arena, size_t num_bytes) {
