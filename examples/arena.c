@@ -1,4 +1,3 @@
-//#include "../suomi_arena.h"
 #include "../suomi.h"
 #include <string.h>
 #include <assert.h>
