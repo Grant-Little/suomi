@@ -58,7 +58,7 @@ smHashTable smHashTableInit(smArena *arena, size_t value_num_bytes, size_t expec
     };
 
     size_t table_max_num_entries = expected_num_values * 100u / SM_HASH_LOAD_FACTOR;
-    size_t bytes_to_push = table_max_num_entries * (value_num_bytes + 4);
+    size_t bytes_to_push = table_max_num_entries * (value_num_bytes + sizeof(uint32_t));
 
     uintptr_t push_result = (uintptr_t)smArenaPush(arena, bytes_to_push);
 #ifndef SM_ASSURE
@@ -66,9 +66,9 @@ smHashTable smHashTableInit(smArena *arena, size_t value_num_bytes, size_t expec
         return hash_table;
     }
 #endif
-    memset((void *)push_result, 0, table_max_num_entries * 4);
+    memset((void *)push_result, 0, table_max_num_entries * sizeof(uint32_t));
     hash_table.hashes = (uint32_t *)push_result;
-    hash_table.values = (table_max_num_entries * 4) + push_result;
+    hash_table.values = (table_max_num_entries * sizeof(uint32_t)) + push_result;
     hash_table.value_num_bytes = value_num_bytes;
     hash_table.max_num_entries = table_max_num_entries;
     hash_table.hash_function = smHashFnv1a32;
@@ -85,7 +85,7 @@ void smHashTableDeinit(smHashTable *hash_table) {
 }
 
 void smHashTableClear(smHashTable *hash_table) {
-    memset(hash_table->hashes, 0, hash_table->max_num_entries * 4);
+    memset(hash_table->hashes, 0, hash_table->max_num_entries * sizeof(uint32_t));
     hash_table->num_current_entries = 0;
 }
 
