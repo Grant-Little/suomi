@@ -6,12 +6,10 @@
 #include <stddef.h>
 
 typedef struct {
-    uint32_t *hashes;
-    uintptr_t values;
-    size_t value_num_bytes;
-    uint32_t max_num_entries;
-    uint32_t num_current_entries;
-    uint32_t (*hash_function)(const void *, size_t);
+    uintptr_t buckets;
+    size_t bucket_num_bytes;
+    uint32_t max_num_buckets;
+    uint32_t num_used_buckets;
 } smHashTable;
 
 // default hash function

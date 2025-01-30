@@ -10,7 +10,15 @@
 #define SM_HASH_DJB_OFFSET_32 5381u
 #define SM_HASH_DJB_SHIFT_32 5u
 
-#define SM_HASH_TABLE_IS_OCCUPIED_INDEX(tbl, idx, hsh) (tbl->hashes[idx] != 0 && tbl->hashes[idx] != UINT32_MAX && tbl->hashes[idx] != hsh)
+#define SM_HASH_FUNCTION smHashFnv1a32
+
+#define SM_HASH_TABLE_GET_BUCKET_HASH(bkt) (*((uint32_t *)bkt))
+
+#define SM_HASH_TABLE_INDEX_TABLE(tbl, idx) (tbl->buckets + (index * tbl->bucket_num_bytes))
+
+#define SM_HASH_TABLE_IS_OCCUPIED_INDEX(tbl, idx, hsh) (SM_HASH_TABLE_GET_BUCKET_HASH(SM_HASH_TABLE_INDEX_TABLE(tbl, idx)) != 0 && SM_HASH_TABLE_GET_BUCKET_HASH(SM_HASH_TABLE_INDEX_TABLE(tbl, idx)) != UINT32_MAX && SM_HASH_TABLE_GET_BUCKET_HASH(SM_HASH_TABLE_INDEX_TABLE(tbl, idx)) != hsh)
+
+#define SM_HASH_TABLE_DELETE_BUCKET(tbl, idx) (*(uint32_t *)SM_HASH_TABLE_INDEX_TABLE(tbl, idx) = UINT32_MAX)
 
 uint32_t smHashInternalProbe(const smHashTable *hash_table, uint32_t hash, uint32_t index);
 
@@ -22,11 +30,13 @@ uint32_t smHashFnv1a32(const void *data, size_t data_num_bytes) {
         hash *= SM_HASH_FNV_PRIME_32;
     }
 
+#ifndef SM_ASSURE
     if (hash == 0) {
         hash = 1;
     } else if (hash == UINT32_MAX) {
         hash = UINT32_MAX - 1;
     }
+#endif
 
     return hash;
 }
@@ -38,27 +48,27 @@ uint32_t smHashDjb32(const void *data, size_t data_num_bytes) {
         hash = ((hash << SM_HASH_DJB_SHIFT_32) + hash) + ((uint8_t *)(data))[i];
     }
 
+#ifndef SM_ASSURE
     if (hash == 0) {
         hash = 1;
     } else if (hash == UINT32_MAX) {
         hash = UINT32_MAX - 1;
     }
+#endif
 
     return hash;
 }
 
-smHashTable smHashTableInit(smArena *arena, size_t value_num_bytes, size_t expected_num_values) {
+smHashTable smHashTableInit(smArena *arena, size_t value_num_bytes, size_t expected_num_buckets) {
     smHashTable hash_table = {
-        .hashes = NULL,
-        .values = 0,
-        .value_num_bytes = 0,
-        .max_num_entries = 0,
-        .num_current_entries = 0,
-        .hash_function = NULL,
-    };
+        .buckets = 0,
+        .bucket_num_bytes = 0,
+        .max_num_buckets = 0,
+        .num_used_buckets = 0,
+    }; 
 
-    size_t table_max_num_entries = expected_num_values * 100u / SM_HASH_LOAD_FACTOR;
-    size_t bytes_to_push = table_max_num_entries * (value_num_bytes + sizeof(uint32_t));
+    size_t table_max_num_buckets = expected_num_buckets * 100u / SM_HASH_LOAD_FACTOR;
+    size_t bytes_to_push = table_max_num_buckets * (value_num_bytes + sizeof(uint32_t));
 
     uintptr_t push_result = (uintptr_t)smArenaPush(arena, bytes_to_push);
 #ifndef SM_ASSURE
@@ -66,98 +76,96 @@ smHashTable smHashTableInit(smArena *arena, size_t value_num_bytes, size_t expec
         return hash_table;
     }
 #endif
-    memset((void *)push_result, 0, table_max_num_entries * sizeof(uint32_t));
-    hash_table.hashes = (uint32_t *)push_result;
-    hash_table.values = (table_max_num_entries * sizeof(uint32_t)) + push_result;
-    hash_table.value_num_bytes = value_num_bytes;
-    hash_table.max_num_entries = table_max_num_entries;
-    hash_table.hash_function = smHashFnv1a32;
+    memset((void *)push_result, 0, table_max_num_buckets * (value_num_bytes + sizeof(uint32_t)));
+    hash_table.buckets = push_result;
+    hash_table.bucket_num_bytes = value_num_bytes + sizeof(uint32_t);
+    hash_table.max_num_buckets = table_max_num_buckets;
     return hash_table;
 }
 
 void smHashTableDeinit(smHashTable *hash_table) {
-    hash_table->hashes = NULL;
-    hash_table->values = 0;
-    hash_table->value_num_bytes = 0;
-    hash_table->max_num_entries = 0;
-    hash_table->num_current_entries = 0;
-    hash_table->hash_function = NULL;
+    hash_table->buckets = 0;
+    hash_table->bucket_num_bytes = 0;
+    hash_table->max_num_buckets = 0;
+    hash_table->num_used_buckets = 0;
 }
 
 void smHashTableClear(smHashTable *hash_table) {
-    memset(hash_table->hashes, 0, hash_table->max_num_entries * sizeof(uint32_t));
-    hash_table->num_current_entries = 0;
+    memset((void *)hash_table->buckets, 0, hash_table->max_num_buckets * hash_table->bucket_num_bytes);
+    hash_table->num_used_buckets = 0;
 }
 
 int smHashTableSet(smHashTable *hash_table, const void *key, size_t key_num_bytes, const void *value) {
 #ifndef SM_ASSURE
-    if (hash_table->num_current_entries >= hash_table->max_num_entries) {
+    if (hash_table->num_used_buckets >= hash_table->max_num_buckets) {
         return EXIT_FAILURE;
     }
 #endif
-    uint32_t hash = hash_table->hash_function(key, key_num_bytes);
-    uint32_t index = hash % hash_table->max_num_entries;
+    uint32_t hash = SM_HASH_FUNCTION(key, key_num_bytes);
+    uint32_t index = hash % hash_table->max_num_buckets;
 
     if (SM_HASH_TABLE_IS_OCCUPIED_INDEX(hash_table, index, hash)) {
         index = smHashInternalProbe(hash_table, hash, index);
     }
 
-    hash_table->hashes[index] = hash;
-    memcpy((void *)(hash_table->values + index * hash_table->value_num_bytes), value, hash_table->value_num_bytes);
-    hash_table->num_current_entries++;
+    void *bucket_ptr = (void *)SM_HASH_TABLE_INDEX_TABLE(hash_table, index);
+    *(uint32_t *)bucket_ptr = hash;
+    memcpy((void *)(SM_HASH_TABLE_INDEX_TABLE(hash_table, index) + sizeof(uint32_t)), value, hash_table->bucket_num_bytes - sizeof(uint32_t));
+    hash_table->num_used_buckets++;
     return EXIT_SUCCESS;
 }
 
 void *smHashTableRetrieve(const smHashTable *hash_table, const void *key, size_t key_num_bytes) {
-    uint32_t hash = hash_table->hash_function(key, key_num_bytes);
-    uint32_t index = hash % hash_table->max_num_entries;
+    uint32_t hash = SM_HASH_FUNCTION(key, key_num_bytes);
+    uint32_t index = hash % hash_table->max_num_buckets;
 
     if (SM_HASH_TABLE_IS_OCCUPIED_INDEX(hash_table, index, hash)) {
         index = smHashInternalProbe(hash_table, hash, index);
     }
 
-    return (void *)(hash_table->values + index * hash_table->value_num_bytes);
+    return (void *)(SM_HASH_TABLE_INDEX_TABLE(hash_table, index) + sizeof(uint32_t));
 }
 
 void smHashTableRemove(smHashTable *hash_table, const void *key, size_t key_num_bytes) {
 #ifndef SM_ASSURE
-    if (hash_table->num_current_entries == 0) {
+    if (hash_table->num_used_buckets == 0) {
         return;
     }
 #endif
-    uint32_t hash = hash_table->hash_function(key, key_num_bytes);
-    uint32_t index = hash % hash_table->max_num_entries;
+    uint32_t hash = SM_HASH_FUNCTION(key, key_num_bytes);
+    uint32_t index = hash % hash_table->max_num_buckets;
 
-    uint32_t internal_probe = hash % (hash_table->max_num_entries - 1);
+    uint32_t internal_probe = hash % (hash_table->max_num_buckets - 1);
 
     while (1) {
-        if (hash_table->hashes[index] == hash) {
-            hash_table->hashes[index] = UINT32_MAX;
-            hash_table->num_current_entries--;
+        if (SM_HASH_TABLE_GET_BUCKET_HASH(SM_HASH_TABLE_INDEX_TABLE(hash_table, index)) == hash) {
+            *(uint32_t *)SM_HASH_TABLE_INDEX_TABLE(hash_table, index) = UINT32_MAX;
+            SM_HASH_TABLE_DELETE_BUCKET(hash_table, index);
+            hash_table->num_used_buckets--;
             break;
-        } else if (hash_table->hashes[index] == 0) {
+        } else if (SM_HASH_TABLE_GET_BUCKET_HASH(SM_HASH_TABLE_INDEX_TABLE(hash_table, index)) == 0) {
             break;
         } else {
             index += internal_probe;
-            if (index >= hash_table->max_num_entries) {
-                index -= hash_table->max_num_entries;
+            if (index >= hash_table->max_num_buckets) {
+                index -= hash_table->max_num_buckets;
             }
-            internal_probe++;
         }
     }
     return;
 }
 
 uint32_t smHashInternalProbe(const smHashTable *hash_table, uint32_t hash, uint32_t index) {
-    uint32_t internal_probe = hash % (hash_table->max_num_entries - 1);
+    uint32_t internal_probe = hash % (hash_table->max_num_buckets - 1);
     while (1) {
         index += internal_probe;
-        if (index >= hash_table->max_num_entries) {
-            index -= hash_table->max_num_entries;
+        if (index >= hash_table->max_num_buckets) {
+            index -= hash_table->max_num_buckets;
         }
         if (SM_HASH_TABLE_IS_OCCUPIED_INDEX(hash_table, index, hash)) {
             internal_probe++;
-        } else {
+        }
+        else {
             break;
         }
     }
