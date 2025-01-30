@@ -1,9 +1,21 @@
-#ifndef SUOMI_STRING_H
-#define SUOMI_STRING_H
+#ifndef SUOMI_H
+#define SUOMI_H
 
-#include "suomi_arena.h"
-#include <stdbool.h>
 #include <stddef.h>
+#include <stdbool.h>
+#include <stdint.h>
+
+typedef struct {
+    uintptr_t start_pos;
+    uintptr_t end_pos;
+    uintptr_t current_pos;
+} smArena;
+
+smArena smArenaInit(size_t num_bytes);
+void smArenaDeinit(smArena *arena);
+void smArenaClear(smArena *arena);
+void *smArenaPush(smArena *arena, size_t num_bytes);
+void smArenaPop(smArena *arena, size_t num_bytes);
 
 typedef struct {
     char *contents;
@@ -48,5 +60,26 @@ char smStringPop(smString *string);
 size_t smStringFindCstring(const smString *searched_string, size_t search_index, size_t search_length, const char *cstring);
 size_t smStringFindString(const smString *searched_string, size_t search_index, size_t search_length, const smString *find_string);
 size_t smStringFindSubString(const smString *searched_string, size_t search_index, size_t search_length, const smString *sub_string, size_t sub_string_index, size_t sub_string_length);
+
+typedef struct {
+    uintptr_t buckets;
+    size_t bucket_num_bytes;
+    uint32_t max_num_buckets;
+    uint32_t num_used_buckets;
+} smHashTable;
+
+// default hash function
+uint32_t smHashFnv1a32(const void *data, size_t data_num_bytes);
+
+// extra hash functions
+uint32_t smHashDjb32(const void *data, size_t data_num_bytes);
+
+smHashTable smHashTableInit(smArena *arena, size_t value_num_bytes, size_t expected_num_values);
+void smHashTableDeinit(smHashTable *hash_table);
+void smHashTableClear(smHashTable *hash_table);
+
+int smHashTableSet(smHashTable *hash_table, const void *key, size_t key_num_bytes, const void *value);
+void *smHashTableRetrieve(const smHashTable *hash_table, const void *key, size_t key_num_bytes);
+void smHashTableRemove(smHashTable *hash_table, const void *key, size_t key_num_bytes);
 
 #endif

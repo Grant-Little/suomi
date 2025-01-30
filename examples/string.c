@@ -1,4 +1,5 @@
-#include "../suomi_string.h"
+//#include "../suomi_string.h"
+#include "../suomi.h"
 #include <assert.h>
 
 int main() {

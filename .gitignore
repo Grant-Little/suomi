@@ -2,8 +2,8 @@
 
 !.gitignore
 !README.md
-!suomi*.c
-!suomi*.h
+!suomi.c
+!suomi.h
 
 !examples/
 examples/*

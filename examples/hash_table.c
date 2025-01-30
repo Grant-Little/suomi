@@ -1,4 +1,5 @@
-#include "../suomi_hash_table.h"
+//#include "../suomi_hash_table.h"
+#include "../suomi.h"
 #include <assert.h>
 #include <string.h>
 
