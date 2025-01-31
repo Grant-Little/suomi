@@ -500,6 +500,82 @@ uint32_t smHashInternalProbe(const smHashTable *hash_table, uint32_t hash, uint3
     return index;
 }
 
+smLinkedListNode *smLinkedListInsert(smArena *arena, smLinkedListNode *previous_node, void *value) {
+    smLinkedListNode *new_node = smArenaPush(arena, sizeof(smLinkedListNode));
+#ifndef SM_ASSURE
+    if (!new_node) {
+        return NULL;
+    }
+#endif
+    memset(new_node, 0, sizeof(smLinkedListNode));
+#ifndef SM_ASSURE
+    if (!value) {
+        return new_node;
+    }
+#endif
+    if (!previous_node) {
+        new_node->value = value;
+        return new_node;
+    }
+    smLinkedListNode *replaced_node = previous_node->next_node;
+    previous_node->next_node = new_node;
+    new_node->previous_node = previous_node;
+    if (replaced_node) {
+        new_node->next_node = replaced_node;
+    }
+    return new_node;
+}
+
+int smLinkedListRemove(smLinkedListNode *node_to_remove) {
+#ifndef SM_ASSURE
+    if (!node_to_remove) {
+        return EXIT_FAILURE;
+    }
+#endif
+    if (!node_to_remove->previous_node && !node_to_remove->next_node) {
+        return EXIT_SUCCESS;
+    } else if (!node_to_remove->previous_node) {
+        ((smLinkedListNode *)(node_to_remove->next_node))->previous_node = NULL;
+    } else if (!node_to_remove->next_node) {
+        ((smLinkedListNode *)(node_to_remove->previous_node))->next_node = NULL;
+    }
+
+    ((smLinkedListNode *)(node_to_remove->next_node))->previous_node = node_to_remove->previous_node;
+    ((smLinkedListNode *)(node_to_remove->previous_node))->next_node = node_to_remove->next_node;
+    
+    return EXIT_SUCCESS;
+}
+
+smLinkedListNode *smLinkedListNodeTraverse(smLinkedListNode *start_node, int traverse_steps) {
+#ifndef SM_ASSURE
+    if (!start_node) {
+        return NULL;
+    }
+#endif
+    
+    smLinkedListNode *current_node = start_node;
+    int current_step = 0;
+    if (traverse_steps >= 0) {
+        while (current_step < traverse_steps) {
+            if (!current_node->next_node) {
+                return NULL;
+            }
+            current_node = (smLinkedListNode *)current_node->next_node;
+            current_step++;
+        }
+    } else {
+        while (current_step > traverse_steps) {
+            if (!current_node->previous_node) {
+                return NULL;
+            }
+            current_node = (smLinkedListNode *)current_node->previous_node;
+            current_step--;
+        }
+    }
+
+    return current_node;
+}
+
 bool smIsMemZeroed(const void *mem, size_t num_bytes) {
     for (size_t i = 0; i < num_bytes; i++) {
         if (((unsigned char *)mem)[i] != (unsigned char)0) {

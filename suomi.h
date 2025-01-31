@@ -83,14 +83,14 @@ void *smHashTableRetrieve(const smHashTable *hash_table, const void *key, size_t
 void smHashTableRemove(smHashTable *hash_table, const void *key, size_t key_num_bytes);
 
 typedef struct {
-    uintptr_t value;
-    size_t value_num_bytes;
-    uintptr_t next_node;
-    uintptr_t previous_node;
+    void *value;
+    //size_t value_num_bytes;
+    void *next_node;
+    void *previous_node;
 } smLinkedListNode;
 
-int smLinkedListInsert(smLinkedListNode *previous_node, const void *value, value_num_bytes);
-int smLinkedListRemove(smLinkedListNode, *node_to_remove);
-smLinkedListNode *smLinkedListNodeTraverse(const smLinkedListNode *start_node, int traverse_steps);
+smLinkedListNode *smLinkedListInsert(smArena *arena, smLinkedListNode *previous_node, void *value);
+int smLinkedListRemove(smLinkedListNode *node_to_remove);
+smLinkedListNode *smLinkedListNodeTraverse(smLinkedListNode *start_node, int traverse_steps);
 
 #endif
