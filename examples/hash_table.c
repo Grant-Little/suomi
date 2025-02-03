@@ -14,10 +14,10 @@ int main() {
     float key2 = 1.0f;
     int val2 = 52;
 
-    exit = smHashTableSet(&table, key1, strlen(key1), &val1);
+    exit = smHashTableInsert(&table, key1, strlen(key1), &val1);
     assert(exit == 0);
 
-    exit = smHashTableSet(&table, &key2, sizeof(key2), &val2);
+    exit = smHashTableInsert(&table, &key2, sizeof(key2), &val2);
     assert(exit == 0);
 
     assert(*(int *)smHashTableRetrieve(&table, key1, strlen(key1)) == *(int *)smHashTableRetrieve(&table, &key2, sizeof(key2)));

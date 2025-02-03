@@ -78,9 +78,10 @@ smHashTable smHashTableInit(smArena *arena, size_t value_num_bytes, size_t expec
 void smHashTableDeinit(smHashTable *hash_table);
 void smHashTableClear(smHashTable *hash_table);
 
-int smHashTableSet(smHashTable *hash_table, const void *key, size_t key_num_bytes, const void *value);
+int smHashTableInsert(smHashTable *hash_table, const void *key, size_t key_num_bytes, const void *value);
 void *smHashTableRetrieve(const smHashTable *hash_table, const void *key, size_t key_num_bytes);
 void smHashTableRemove(smHashTable *hash_table, const void *key, size_t key_num_bytes);
+bool smHashTableIsFull(smHashTable *hash_table);
 
 typedef struct {
     void *value;
@@ -92,5 +93,22 @@ typedef struct {
 smLinkedListNode *smLinkedListInsert(smArena *arena, smLinkedListNode *previous_node, void *value);
 int smLinkedListRemove(smLinkedListNode *node_to_remove);
 smLinkedListNode *smLinkedListNodeTraverse(smLinkedListNode *start_node, int traverse_steps);
+
+typedef struct {
+    uintptr_t contents;
+    size_t value_num_bytes;
+    size_t num_values;
+    uintptr_t front;
+    uintptr_t end;
+} smQueue;
+
+smQueue smQueueInit(smArena *arena, size_t value_num_bytes, size_t num_values);
+void smQueueDeinit(smQueue *queue);
+void smQueueClear(smQueue *queue);
+
+int smQueueInsert(smQueue *queue, void *value);
+void *smQueueRetrieve(smQueue *queue);
+void *smQueuePeek(smQueue *queue);
+bool smQueueIsFull(smQueue *queue);
 
 #endif

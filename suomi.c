@@ -423,7 +423,7 @@ void smHashTableClear(smHashTable *hash_table) {
     hash_table->num_used_buckets = 0;
 }
 
-int smHashTableSet(smHashTable *hash_table, const void *key, size_t key_num_bytes, const void *value) {
+int smHashTableInsert(smHashTable *hash_table, const void *key, size_t key_num_bytes, const void *value) {
 #ifndef SM_ASSURE
     if (hash_table->num_used_buckets >= hash_table->max_num_buckets) {
         return EXIT_FAILURE;
@@ -481,6 +481,14 @@ void smHashTableRemove(smHashTable *hash_table, const void *key, size_t key_num_
         }
     }
     return;
+}
+
+bool smHashTableIsFull(smHashTable *hash_table) {
+    if (hash_table->num_used_buckets == hash_table->max_num_buckets) {
+        return true;
+    } else {
+        return false;
+    }
 }
 
 uint32_t smHashInternalProbe(const smHashTable *hash_table, uint32_t hash, uint32_t index) {
@@ -576,9 +584,119 @@ smLinkedListNode *smLinkedListNodeTraverse(smLinkedListNode *start_node, int tra
     return current_node;
 }
 
+// do i even need this?
+// can smQueueRetrieve return a pointer to garbage bytes instead of a null pointer?
+#define SM_QUEUE_IS_EMPTY(que) (que->front == 0)
+#define SM_QUEUE_IS_FULL(que) (que->end == 0)
+// if we advance que->front,
+// will that put us out of ring buffer bounds?
+#define SM_QUEUE_WILL_FRONT_OVERRUN(que) (que->front == (que->contents + que->value_num_bytes * (que->num_values - 1)))
+// if we advance que->end,
+// will that put us out of ring buffer bounds?
+#define SM_QUEUE_WILL_END_OVERRUN(que) (que->end == (que->contents + que->value_num_bytes * (que->num_values - 1)))
+
+smQueue smQueueInit(smArena *arena, size_t value_num_bytes, size_t num_values) {
+    smQueue queue = {
+        .contents = 0,
+        .value_num_bytes = 0,
+        .num_values = 0,
+        .front = 0,
+        .end = 0,
+    };
+
+    size_t bytes_to_push = value_num_bytes * num_values;
+    uintptr_t push_result = (uintptr_t)smArenaPush(arena, bytes_to_push);
+#ifndef SM_ASSURE
+    if (!push_result) {
+        return queue;
+    }
+#endif
+    queue.contents = push_result;
+    queue.value_num_bytes = value_num_bytes;
+    queue.num_values = num_values;
+    queue.front = push_result;
+    queue.end = push_result;
+
+    return queue;
+}
+
+void smQueueDeinit(smQueue *queue) {
+    queue->contents = 0;
+    queue->value_num_bytes = 0;
+    queue->num_values = 0;
+    queue->front = 0;
+    queue->end = 0;
+}
+
+void smQueueClear(smQueue *queue) {
+    queue->front = queue->contents;
+    queue->end = queue->contents;
+}
+
+int smQueueInsert(smQueue *queue, void *value) {
+    uintptr_t next_end_pos;
+    if (SM_QUEUE_WILL_END_OVERRUN(queue)) {
+        next_end_pos = queue->contents;
+    } else {
+        next_end_pos = queue->end + queue->value_num_bytes;
+    }
+
+#ifndef SM_ASSURE
+    if (next_end_pos == queue->front) {
+        return EXIT_FAILURE;
+    }
+#endif
+
+    queue->end = next_end_pos;
+    memcpy((void *)queue->end, value, queue->value_num_bytes);
+    return EXIT_SUCCESS;
+}
+
+void *smQueueRetrieve(smQueue *queue) {
+#ifndef SM_ASSURE
+    if (queue->front == queue->end) {
+        return NULL;
+    }
+#endif
+
+    uintptr_t last_front_pos = queue->front;
+    if (SM_QUEUE_WILL_FRONT_OVERRUN(queue)) {
+        queue->front = queue->contents;
+    } else {
+        queue->front += queue->value_num_bytes;
+    }
+
+    return (void *)last_front_pos;
+}
+
+void *smQueuePeek(smQueue *queue) {
+#ifndef SM_ASSURe
+    if (queue->front == queue->end) {
+        return NULL;
+    }
+#endif
+
+    return (void *)queue->front;
+}
+
+bool smQueueIsFull(smQueue *queue) {
+    uintptr_t next_end_pos;
+    if (SM_QUEUE_WILL_END_OVERRUN(queue)) {
+        next_end_pos = queue->contents;
+    } else {
+        next_end_pos = queue->end + queue->value_num_bytes;
+    }
+
+    if (next_end_pos == queue->front) {
+        return true;
+    } else {
+        return false;
+    }
+}
+
 bool smIsMemZeroed(const void *mem, size_t num_bytes) {
     for (size_t i = 0; i < num_bytes; i++) {
-        if (((unsigned char *)mem)[i] != (unsigned char)0) {
+        if (((uint8_t *)mem)[i] != 0) {
             return false;
         }
     }
