@@ -5,6 +5,13 @@
 #include <stdbool.h>
 #include <stdint.h>
 
+typedef enum {
+    SM_ALLOCATION_FAILED,
+    SM_ARENA_FULL,
+    SM_BUFFER_TOO_SMALL,
+    SM_INDEX_OUT_OF_BOUNDS,
+} smError;
+
 typedef struct {
     uintptr_t start_pos;
     uintptr_t end_pos;
@@ -12,9 +19,9 @@ typedef struct {
 } smArena;
 
 smArena smArenaInit(size_t num_bytes);
-void smArenaDeinit(smArena *arena);
+void smArenaDeinit(smError *error, smArena *arena);
 void smArenaClear(smArena *arena);
-void *smArenaPush(smArena *arena, size_t num_bytes);
+void *smArenaPush(smError *error, smArena *arena, size_t num_bytes);
 void smArenaPop(smArena *arena, size_t num_bytes);
 
 typedef struct {
@@ -27,8 +34,8 @@ typedef struct {
 void smStringPuts(const smString *string);
 
 // creating and destroying strings
-smString smStringInit(smArena *arena, size_t capacity);
-smString smStringInitWithContents(smArena *arena, const char *contents, size_t capacity);
+smString smStringInit(smError *error, smArena *arena, size_t capacity);
+smString smStringInitWithContents(smError *error, smArena *arena, const char *contents, size_t capacity);
 void smStringDeinit(smString *string);
 void smStringClear(smString *string);
 
@@ -38,7 +45,7 @@ void smStringClear(smString *string);
 bool smStringAreContentsSame(const smString *string1, const smString *string2);
 
 // index string
-char smStringIndex(const smString *string, size_t index); //positive indices, return '\0' on invalid index
+char smStringIndex(smError *error, const smString *string, size_t index); //positive indices, return '\0' on invalid index
 
 // modifying strings
 int smStringAppendCstring(smString *dest_string, const char *cstring);

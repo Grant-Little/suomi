@@ -6,7 +6,7 @@
 bool smIsMemZeroed(const void *mem, size_t num_bytes);
 void *smMemMem(const void *haystack, size_t haystack_length, const void *needle, size_t needle_length);
 
-smArena smArenaInit(size_t num_bytes) {
+smArena smArenaInit(smError *error, size_t num_bytes) {
     smArena arena = {
         .start_pos = 0,
         .end_pos = 0,
@@ -16,6 +16,7 @@ smArena smArenaInit(size_t num_bytes) {
     arena.start_pos = (uintptr_t)malloc(num_bytes);
 #ifndef SM_ASSURE
     if (!arena.start_pos) {
+        *error = SM_ALLOCATION_FAILED;
         return arena;
     }
 #endif
@@ -36,9 +37,10 @@ void smArenaClear(smArena *arena) {
     arena->current_pos = arena->start_pos;
 }
 
-void *smArenaPush(smArena *arena, size_t num_bytes) {
+void *smArenaPush(smError *error, smArena *arena, size_t num_bytes) {
 #ifndef SM_ASSURE
     if ((arena->current_pos + num_bytes) > arena->end_pos) {
+        *error = SM_ARENA_FULL;
         return NULL;
     }
 #endif
@@ -62,14 +64,14 @@ void smStringPuts(const smString *string) {
     putchar('\n');
 }
 
-smString smStringInit(smArena *arena, size_t capacity) {
+smString smStringInit(smError *error, smArena *arena, size_t capacity) {
     smString string = {
         .contents = NULL,
         .length = 0,
         .capacity = 0,
     };
 
-    char *push_result = smArenaPush(arena, capacity);
+    char *push_result = smArenaPush(error, arena, capacity);
 #ifndef SM_ASSURE
     if (!push_result) {
         return string;
@@ -80,7 +82,7 @@ smString smStringInit(smArena *arena, size_t capacity) {
     return string;
 }
 
-smString smStringInitWithContents(smArena *arena, const char *contents, size_t capacity) {
+smString smStringInitWithContents(smError *error, smArena *arena, const char *contents, size_t capacity) {
     smString string = {
         .contents = NULL,
         .length = 0,
@@ -93,10 +95,11 @@ smString smStringInitWithContents(smArena *arena, const char *contents, size_t c
     if (capacity < contents_length) {
         capacity = contents_length;
     } else if (contents_length > capacity) {
+        *error = SM_BUFFER_TOO_SMALL;
         return string;
     }
     
-    char *push_result = smArenaPush(arena, capacity);
+    char *push_result = smArenaPush(error, arena, capacity);
 #ifndef SM_ASSURE
     if (!push_result) {
         return string;
@@ -132,9 +135,10 @@ bool smStringAreContentsSame(const smString *string1, const smString *string2) {
     }
 }
 
-char smStringIndex(const smString *string, size_t index) {
+char smStringIndex(smError *error, const smString *string, size_t index) {
     // unsure if I should put an SM_ASSURE here
     if (index >= string->length) {
+        *error = SM_INDEX_OUT_OF_BOUNDS;
         return '\0';
     } else {
         return *(string->contents + index);
@@ -584,15 +588,7 @@ smLinkedListNode *smLinkedListNodeTraverse(smLinkedListNode *start_node, int tra
     return current_node;
 }
 
-// do i even need this?
-// can smQueueRetrieve return a pointer to garbage bytes instead of a null pointer?
-#define SM_QUEUE_IS_EMPTY(que) (que->front == 0)
-#define SM_QUEUE_IS_FULL(que) (que->end == 0)
-// if we advance que->front,
-// will that put us out of ring buffer bounds?
 #define SM_QUEUE_WILL_FRONT_OVERRUN(que) (que->front == (que->contents + que->value_num_bytes * (que->num_values - 1)))
-// if we advance que->end,
-// will that put us out of ring buffer bounds?
 #define SM_QUEUE_WILL_END_OVERRUN(que) (que->end == (que->contents + que->value_num_bytes * (que->num_values - 1)))
 
 smQueue smQueueInit(smArena *arena, size_t value_num_bytes, size_t num_values) {
