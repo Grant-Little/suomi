@@ -145,131 +145,140 @@ char smStringIndex(smError *error, const smString *string, size_t index) {
     }
 }
 
-int smStringAppendCstring(smString *dest_string, const char *cstring) {
+void smStringAppendCstring(smError *error, smString *dest_string, const char *cstring) {
     size_t cstring_length = strlen(cstring);
 #ifndef SM_ASSURE
     if ((dest_string->length + cstring_length) > dest_string->capacity) {
-        return EXIT_FAILURE;
+        *error = SM_BUFFER_TOO_SMALL;
+        return;
     }
 #endif
     memcpy((dest_string->contents + dest_string->length), cstring, cstring_length);
     dest_string->length += cstring_length;
-    return EXIT_SUCCESS;
+    return;
 }
 
-int smStringAppendString(smString *dest_string, const smString *source_string) {
-    return smStringAppendSubString(dest_string, source_string, 0, 0);
+void smStringAppendString(smError *error, smString *dest_string, const smString *source_string) {
+    return smStringAppendSubString(error, dest_string, source_string, 0, 0);
 }
 
-int smStringAppendSubString(smString *dest_string, const smString *sub_string, size_t sub_string_index, size_t sub_string_length) {
+void smStringAppendSubString(smError *error, smString *dest_string, const smString *sub_string, size_t sub_string_index, size_t sub_string_length) {
     if (sub_string_length == 0) {
         sub_string_length = sub_string->length - sub_string_index;
     }
 
 #ifndef SM_ASSURE
     if ((dest_string->length + sub_string_length) > dest_string->capacity || !SM_STRING_IS_VALID_SUB_STRING(sub_string, sub_string_index, sub_string_length)) {
-        return EXIT_FAILURE;
+        *error = SM_INDEX_OUT_OF_BOUNDS;
+        return;
     }
 #endif
     memcpy((dest_string->contents + dest_string->length), (sub_string->contents + sub_string_index), sub_string_length);
     dest_string->length += sub_string_length;
-    return EXIT_SUCCESS;
+    return;
 }
 
-int smStringCopyCstring(smString *dest_string , const char *cstring) {
+void smStringCopyCstring(smError *error, smString *dest_string , const char *cstring) {
     size_t cstring_length = strlen(cstring);
 #ifndef SM_ASSURE
     if (dest_string->capacity < cstring_length) {
-        return EXIT_FAILURE;
+        *error = SM_INDEX_OUT_OF_BOUNDS;
+        return;
     }
 #endif
     memcpy(dest_string->contents, cstring, cstring_length);
     dest_string->length = cstring_length;
-    return EXIT_SUCCESS;
+    return;
 }
 
-int smStringCopyString(smString *dest_string, const smString *copied_string) {
-    return smStringCopySubString(dest_string, copied_string, 0, 0);
+void smStringCopyString(smError *error, smString *dest_string, const smString *copied_string) {
+    return smStringCopySubString(error, dest_string, copied_string, 0, 0);
 }
 
-int smStringCopySubString(smString *dest_string, const smString *sub_string, size_t sub_string_index, size_t sub_string_length) {
+void smStringCopySubString(smError *error, smString *dest_string, const smString *sub_string, size_t sub_string_index, size_t sub_string_length) {
     if (sub_string_length == 0) {
         sub_string_length = sub_string->length - sub_string_index;
     }
 
 #ifndef SM_ASSURE
     if (dest_string->capacity < sub_string_length || !SM_STRING_IS_VALID_SUB_STRING(sub_string, sub_string_index, sub_string_length)) {
-        return EXIT_FAILURE;
+        *error = SM_INDEX_OUT_OF_BOUNDS;
+        return;
     }
 #endif
     memcpy(dest_string->contents, (sub_string->contents + sub_string_index), sub_string_length);
     dest_string->length = sub_string_length;
-    return EXIT_SUCCESS;
+    return;
 }
 
-int smStringWriteCstringAtIndex(smString *dest_string, size_t dest_index, const char *cstring) {
+void smStringWriteCstringAtIndex(smError *error, smString *dest_string, size_t dest_index, const char *cstring) {
     size_t cstring_length = strlen(cstring);
 #ifndef SM_ASSURE
     if ((dest_index + cstring_length) > dest_string->capacity) {
-        return EXIT_FAILURE;
+        *error = SM_INDEX_OUT_OF_BOUNDS;
+        return;
     }
 #endif
     memcpy((dest_string->contents + dest_index), cstring, cstring_length);
     if (dest_string->length < (cstring_length + dest_index)) {
         dest_string->length = cstring_length + dest_index;
     }
-    return EXIT_SUCCESS;
-}
-int smStringWriteStringAtIndex(smString *dest_string, size_t dest_index, const smString *source_string) {
-    return smStringWriteSubStringAtIndex(dest_string, dest_index, source_string, 0, 0);
+    return;
 }
 
-int smStringWriteSubStringAtIndex(smString *dest_string, size_t dest_index, const smString *sub_string, size_t sub_string_index, size_t sub_string_length) {
+void smStringWriteStringAtIndex(smError *error, smString *dest_string, size_t dest_index, const smString *source_string) {
+    return smStringWriteSubStringAtIndex(error, dest_string, dest_index, source_string, 0, 0);
+}
+
+void smStringWriteSubStringAtIndex(smError *error, smString *dest_string, size_t dest_index, const smString *sub_string, size_t sub_string_index, size_t sub_string_length) {
     if (sub_string_length == 0) {
         sub_string_length = sub_string->length - sub_string_index;
     }
 
 #ifndef SM_ASSURE
     if ((dest_index + sub_string_length) > dest_string->capacity || !SM_STRING_IS_VALID_SUB_STRING(sub_string, sub_string_index, sub_string_length)) {
-        return EXIT_FAILURE;
+        *error = SM_INDEX_OUT_OF_BOUNDS;
+        return;
     }
 #endif
     memcpy((dest_string->contents + dest_index), (sub_string->contents + sub_string_index), sub_string_length);
     if (dest_string->length < (sub_string_length + dest_index)) {
         dest_string->length = sub_string_length + dest_index;
     }
-    return EXIT_SUCCESS;
+    return;
 }
 
-int smStringRemove(smString *string, size_t index, size_t length) {
+void smStringRemove(smError *error, smString *string, size_t index, size_t length) {
     if (length == 0) {
         length = string->length - index;
     }
 
 #ifndef SM_ASSURE
     if (!SM_STRING_IS_VALID_SUB_STRING(string, index, length)) {
-        return EXIT_FAILURE;
+        *error = SM_INDEX_OUT_OF_BOUNDS;
+        return;
     } 
 #endif
     if ((index + length) == string->length) {
         string->length = index;
-        return EXIT_SUCCESS;
+        return;
     } else {
         memcpy((string->contents + index), (string->contents + index + length), (string->length - (index + length)));
         string->length -= length;
-        return EXIT_SUCCESS;
+        return;
     }
 }
 
-int smStringPush(smString *string, char character) {
+void smStringPush(smError *error, smString *string, char character) {
 #ifndef SM_ASSURE
     if ((string->length) >= (string->capacity)) {
-        return EXIT_FAILURE;
+        *error = SM_BUFFER_TOO_SMALL;
+        return;
     }
 #endif
     *(string->contents + string->length) = character;
     string->length++;
-    return EXIT_SUCCESS;
+    return;
 }
 
 char smStringPop(smString *string) {
@@ -307,10 +316,10 @@ size_t smStringFindCstring(const smString *searched_string, size_t search_index,
 }
 
 size_t smStringFindString(const smString *searched_string, size_t search_index, size_t search_length, const smString *find_string) {
-    return smStringFindSubString(searched_string, search_index, search_length, find_string, 0, 0);
+    return smStringFindSubString(NULL, searched_string, search_index, search_length, find_string, 0, 0);
 }
 
-size_t smStringFindSubString(const smString *searched_string, size_t search_index, size_t search_length, const smString *sub_string, size_t sub_string_index, size_t sub_string_length) {
+size_t smStringFindSubString(smError *error, const smString *searched_string, size_t search_index, size_t search_length, const smString *sub_string, size_t sub_string_index, size_t sub_string_length) {
     if (sub_string_length == 0) {
         sub_string_length = sub_string->length - sub_string_index;
     }
@@ -320,6 +329,7 @@ size_t smStringFindSubString(const smString *searched_string, size_t search_inde
     }
 #ifndef SM_ASSURE
     if (!SM_STRING_IS_VALID_SUB_STRING(searched_string, search_index, search_length) || !SM_STRING_IS_VALID_SUB_STRING(sub_string, sub_string_index, sub_string_length)) {
+        *error = SM_INDEX_OUT_OF_BOUNDS;
         return SIZE_MAX;
     } else if (search_length < sub_string_length) {
         return SIZE_MAX;
@@ -391,7 +401,7 @@ uint32_t smHashDjb32(const void *data, size_t data_num_bytes) {
     return hash;
 }
 
-smHashTable smHashTableInit(smArena *arena, size_t value_num_bytes, size_t expected_num_buckets) {
+smHashTable smHashTableInit(smError *error, smArena *arena, size_t value_num_bytes, size_t expected_num_buckets) {
     smHashTable hash_table = {
         .buckets = 0,
         .bucket_num_bytes = 0,
@@ -402,7 +412,7 @@ smHashTable smHashTableInit(smArena *arena, size_t value_num_bytes, size_t expec
     size_t table_max_num_buckets = expected_num_buckets * 100u / SM_HASH_LOAD_FACTOR;
     size_t bytes_to_push = table_max_num_buckets * (value_num_bytes + sizeof(uint32_t));
 
-    uintptr_t push_result = (uintptr_t)smArenaPush(arena, bytes_to_push);
+    uintptr_t push_result = (uintptr_t)smArenaPush(error, arena, bytes_to_push);
 #ifndef SM_ASSURE
     if (!push_result) {
         return hash_table;
@@ -427,10 +437,11 @@ void smHashTableClear(smHashTable *hash_table) {
     hash_table->num_used_buckets = 0;
 }
 
-int smHashTableInsert(smHashTable *hash_table, const void *key, size_t key_num_bytes, const void *value) {
+void smHashTableInsert(smError *error, smHashTable *hash_table, const void *key, size_t key_num_bytes, const void *value) {
 #ifndef SM_ASSURE
     if (hash_table->num_used_buckets >= hash_table->max_num_buckets) {
-        return EXIT_FAILURE;
+        *error = SM_BUFFER_TOO_SMALL;
+        return;
     }
 #endif
     uint32_t hash = SM_HASH_FUNCTION(key, key_num_bytes);
@@ -444,7 +455,7 @@ int smHashTableInsert(smHashTable *hash_table, const void *key, size_t key_num_b
     *(uint32_t *)bucket_ptr = hash;
     memcpy((void *)(SM_HASH_TABLE_INDEX_TABLE(hash_table, index) + sizeof(uint32_t)), value, hash_table->bucket_num_bytes - sizeof(uint32_t));
     hash_table->num_used_buckets++;
-    return EXIT_SUCCESS;
+    return;
 }
 
 void *smHashTableRetrieve(const smHashTable *hash_table, const void *key, size_t key_num_bytes) {
@@ -512,19 +523,16 @@ uint32_t smHashInternalProbe(const smHashTable *hash_table, uint32_t hash, uint3
     return index;
 }
 
-smLinkedListNode *smLinkedListInsert(smArena *arena, smLinkedListNode *previous_node, void *value) {
-    smLinkedListNode *new_node = smArenaPush(arena, sizeof(smLinkedListNode));
+smLinkedListNode *smLinkedListInsert(smError *error, smArena *arena, smLinkedListNode *previous_node, void *value) {
+    smLinkedListNode *new_node = smArenaPush(error, arena, sizeof(smLinkedListNode));
 #ifndef SM_ASSURE
     if (!new_node) {
+        *error = SM_ARENA_FULL;
         return NULL;
     }
 #endif
     memset(new_node, 0, sizeof(smLinkedListNode));
-#ifndef SM_ASSURE
-    if (!value) {
-        return new_node;
-    }
-#endif
+
     if (!previous_node) {
         new_node->value = value;
         return new_node;
@@ -538,14 +546,14 @@ smLinkedListNode *smLinkedListInsert(smArena *arena, smLinkedListNode *previous_
     return new_node;
 }
 
-int smLinkedListRemove(smLinkedListNode *node_to_remove) {
+void smLinkedListRemove(smLinkedListNode *node_to_remove) {
 #ifndef SM_ASSURE
     if (!node_to_remove) {
-        return EXIT_FAILURE;
+        return;
     }
 #endif
     if (!node_to_remove->previous_node && !node_to_remove->next_node) {
-        return EXIT_SUCCESS;
+        return;
     } else if (!node_to_remove->previous_node) {
         ((smLinkedListNode *)(node_to_remove->next_node))->previous_node = NULL;
     } else if (!node_to_remove->next_node) {
@@ -555,10 +563,10 @@ int smLinkedListRemove(smLinkedListNode *node_to_remove) {
     ((smLinkedListNode *)(node_to_remove->next_node))->previous_node = node_to_remove->previous_node;
     ((smLinkedListNode *)(node_to_remove->previous_node))->next_node = node_to_remove->next_node;
     
-    return EXIT_SUCCESS;
+    return;
 }
 
-smLinkedListNode *smLinkedListNodeTraverse(smLinkedListNode *start_node, int traverse_steps) {
+smLinkedListNode *smLinkedListNodeTraverse(smError *error, smLinkedListNode *start_node, int traverse_steps) {
 #ifndef SM_ASSURE
     if (!start_node) {
         return NULL;
@@ -570,6 +578,7 @@ smLinkedListNode *smLinkedListNodeTraverse(smLinkedListNode *start_node, int tra
     if (traverse_steps >= 0) {
         while (current_step < traverse_steps) {
             if (!current_node->next_node) {
+                *error = SM_REQUESTED_NULL;
                 return NULL;
             }
             current_node = (smLinkedListNode *)current_node->next_node;
@@ -578,6 +587,7 @@ smLinkedListNode *smLinkedListNodeTraverse(smLinkedListNode *start_node, int tra
     } else {
         while (current_step > traverse_steps) {
             if (!current_node->previous_node) {
+                *error = SM_REQUESTED_NULL;
                 return NULL;
             }
             current_node = (smLinkedListNode *)current_node->previous_node;
@@ -591,7 +601,7 @@ smLinkedListNode *smLinkedListNodeTraverse(smLinkedListNode *start_node, int tra
 #define SM_QUEUE_WILL_FRONT_OVERRUN(que) (que->front == (que->contents + que->value_num_bytes * (que->num_values - 1)))
 #define SM_QUEUE_WILL_END_OVERRUN(que) (que->end == (que->contents + que->value_num_bytes * (que->num_values - 1)))
 
-smQueue smQueueInit(smArena *arena, size_t value_num_bytes, size_t num_values) {
+smQueue smQueueInit(smError *error, smArena *arena, size_t value_num_bytes, size_t num_values) {
     smQueue queue = {
         .contents = 0,
         .value_num_bytes = 0,
@@ -604,6 +614,7 @@ smQueue smQueueInit(smArena *arena, size_t value_num_bytes, size_t num_values) {
     uintptr_t push_result = (uintptr_t)smArenaPush(arena, bytes_to_push);
 #ifndef SM_ASSURE
     if (!push_result) {
+        *error = SM_ARENA_FULL;
         return queue;
     }
 #endif
@@ -629,7 +640,7 @@ void smQueueClear(smQueue *queue) {
     queue->end = queue->contents;
 }
 
-int smQueueInsert(smQueue *queue, void *value) {
+void smQueueInsert(smError *error, smQueue *queue, void *value) {
     uintptr_t next_end_pos;
     if (SM_QUEUE_WILL_END_OVERRUN(queue)) {
         next_end_pos = queue->contents;
@@ -639,18 +650,20 @@ int smQueueInsert(smQueue *queue, void *value) {
 
 #ifndef SM_ASSURE
     if (next_end_pos == queue->front) {
-        return EXIT_FAILURE;
+        *error = SM_BUFFER_TOO_SMALL;
+        return;
     }
 #endif
 
     queue->end = next_end_pos;
     memcpy((void *)queue->end, value, queue->value_num_bytes);
-    return EXIT_SUCCESS;
+    return;
 }
 
-void *smQueueRetrieve(smQueue *queue) {
+void *smQueueRetrieve(smError *error, smQueue *queue) {
 #ifndef SM_ASSURE
     if (queue->front == queue->end) {
+        *error = SM_REQUESTED_NULL;
         return NULL;
     }
 #endif
@@ -665,9 +678,10 @@ void *smQueueRetrieve(smQueue *queue) {
     return (void *)last_front_pos;
 }
 
-void *smQueuePeek(smQueue *queue) {
+void *smQueuePeek(smError *error, smQueue *queue) {
 #ifndef SM_ASSURe
     if (queue->front == queue->end) {
+        *error = SM_REQUESTED_NULL;
         return NULL;
     }
 #endif

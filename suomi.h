@@ -6,10 +6,12 @@
 #include <stdint.h>
 
 typedef enum {
+    SM_NONE,
     SM_ALLOCATION_FAILED,
     SM_ARENA_FULL,
     SM_BUFFER_TOO_SMALL,
     SM_INDEX_OUT_OF_BOUNDS,
+    SM_REQUESTED_NULL,
 } smError;
 
 typedef struct {
@@ -18,8 +20,8 @@ typedef struct {
     uintptr_t current_pos;
 } smArena;
 
-smArena smArenaInit(size_t num_bytes);
-void smArenaDeinit(smError *error, smArena *arena);
+smArena smArenaInit(smError *error, size_t num_bytes);
+void smArenaDeinit(smArena *arena);
 void smArenaClear(smArena *arena);
 void *smArenaPush(smError *error, smArena *arena, size_t num_bytes);
 void smArenaPop(smArena *arena, size_t num_bytes);
@@ -48,17 +50,17 @@ bool smStringAreContentsSame(const smString *string1, const smString *string2);
 char smStringIndex(smError *error, const smString *string, size_t index); //positive indices, return '\0' on invalid index
 
 // modifying strings
-int smStringAppendCstring(smString *dest_string, const char *cstring);
-int smStringAppendString(smString *dest_string, const smString *source_string);
-int smStringAppendSubString(smString *dest_string, const smString *sub_string, size_t sub_string_index, size_t sub_string_length);
-int smStringCopyCstring(smString *dest_string , const char *cstring);
-int smStringCopyString(smString *dest_string, const smString *copied_string);
-int smStringCopySubString(smString *dest_string, const smString *sub_string, size_t sub_string_index, size_t sub_string_length);
-int smStringWriteCstringAtIndex(smString *dest_string, size_t dest_index, const char *cstring);
-int smStringWriteStringAtIndex(smString *dest_string, size_t dest_index, const smString *source_string);
-int smStringWriteSubStringAtIndex(smString *dest_string, size_t dest_index, const smString *sub_string, size_t sub_string_index, size_t sub_string_length);
-int smStringRemove(smString *string, size_t index, size_t length);
-int smStringPush(smString *string, char character);
+void smStringAppendCstring(smError *error, smString *dest_string, const char *cstring);
+void smStringAppendString(smError *error, smString *dest_string, const smString *source_string);
+void smStringAppendSubString(smError *error, smString *dest_string, const smString *sub_string, size_t sub_string_index, size_t sub_string_length);
+void smStringCopyCstring(smError *error, smString *dest_string , const char *cstring);
+void smStringCopyString(smError *error, smString *dest_string, const smString *copied_string);
+void smStringCopySubString(smError *error, smString *dest_string, const smString *sub_string, size_t sub_string_index, size_t sub_string_length);
+void smStringWriteCstringAtIndex(smError *error, smString *dest_string, size_t dest_index, const char *cstring);
+void smStringWriteStringAtIndex(smError *error, smString *dest_string, size_t dest_index, const smString *source_string);
+void smStringWriteSubStringAtIndex(smError *error, smString *dest_string, size_t dest_index, const smString *sub_string, size_t sub_string_index, size_t sub_string_length);
+void smStringRemove(smError *error, smString *string, size_t index, size_t length);
+void smStringPush(smError *error, smString *string, char character);
 char smStringPop(smString *string);
 
 // search for first occurence, provide index and length to search, return SIZE_MAX if not found, 0 search_length is taken as searched_string->length
@@ -66,7 +68,7 @@ char smStringPop(smString *string);
 // potentially write own implementation of memmem to use if memmem not defined
 size_t smStringFindCstring(const smString *searched_string, size_t search_index, size_t search_length, const char *cstring);
 size_t smStringFindString(const smString *searched_string, size_t search_index, size_t search_length, const smString *find_string);
-size_t smStringFindSubString(const smString *searched_string, size_t search_index, size_t search_length, const smString *sub_string, size_t sub_string_index, size_t sub_string_length);
+size_t smStringFindSubString(smError *error, const smString *searched_string, size_t search_index, size_t search_length, const smString *sub_string, size_t sub_string_index, size_t sub_string_length);
 
 typedef struct {
     uintptr_t buckets;
@@ -81,25 +83,24 @@ uint32_t smHashFnv1a32(const void *data, size_t data_num_bytes);
 // extra hash functions
 uint32_t smHashDjb32(const void *data, size_t data_num_bytes);
 
-smHashTable smHashTableInit(smArena *arena, size_t value_num_bytes, size_t expected_num_values);
+smHashTable smHashTableInit(smError *error, smArena *arena, size_t value_num_bytes, size_t expected_num_values);
 void smHashTableDeinit(smHashTable *hash_table);
 void smHashTableClear(smHashTable *hash_table);
 
-int smHashTableInsert(smHashTable *hash_table, const void *key, size_t key_num_bytes, const void *value);
+void smHashTableInsert(smError *error, smHashTable *hash_table, const void *key, size_t key_num_bytes, const void *value);
 void *smHashTableRetrieve(const smHashTable *hash_table, const void *key, size_t key_num_bytes);
 void smHashTableRemove(smHashTable *hash_table, const void *key, size_t key_num_bytes);
 bool smHashTableIsFull(smHashTable *hash_table);
 
 typedef struct {
     void *value;
-    //size_t value_num_bytes;
     void *next_node;
     void *previous_node;
 } smLinkedListNode;
 
-smLinkedListNode *smLinkedListInsert(smArena *arena, smLinkedListNode *previous_node, void *value);
-int smLinkedListRemove(smLinkedListNode *node_to_remove);
-smLinkedListNode *smLinkedListNodeTraverse(smLinkedListNode *start_node, int traverse_steps);
+smLinkedListNode *smLinkedListInsert(smError *error, smArena *arena, smLinkedListNode *previous_node, void *value);
+void smLinkedListRemove(smLinkedListNode *node_to_remove);
+smLinkedListNode *smLinkedListNodeTraverse(smError *error, smLinkedListNode *start_node, int traverse_steps);
 
 typedef struct {
     uintptr_t contents;
@@ -109,13 +110,13 @@ typedef struct {
     uintptr_t end;
 } smQueue;
 
-smQueue smQueueInit(smArena *arena, size_t value_num_bytes, size_t num_values);
+smQueue smQueueInit(smError *error, smArena *arena, size_t value_num_bytes, size_t num_values);
 void smQueueDeinit(smQueue *queue);
 void smQueueClear(smQueue *queue);
 
-int smQueueInsert(smQueue *queue, void *value);
-void *smQueueRetrieve(smQueue *queue);
-void *smQueuePeek(smQueue *queue);
+void smQueueInsert(smError *error, smQueue *queue, void *value);
+void *smQueueRetrieve(smError *error, smQueue *queue);
+void *smQueuePeek(smError *error, smQueue *queue);
 bool smQueueIsFull(smQueue *queue);
 
 #endif
