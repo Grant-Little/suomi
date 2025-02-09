@@ -611,7 +611,7 @@ smQueue smQueueInit(smError *error, smArena *arena, size_t value_num_bytes, size
     };
 
     size_t bytes_to_push = value_num_bytes * num_values;
-    uintptr_t push_result = (uintptr_t)smArenaPush(arena, bytes_to_push);
+    uintptr_t push_result = (uintptr_t)smArenaPush(error, arena, bytes_to_push);
 #ifndef SM_ASSURE
     if (!push_result) {
         *error = SM_ARENA_FULL;

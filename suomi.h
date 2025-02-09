@@ -6,7 +6,7 @@
 #include <stdint.h>
 
 typedef enum {
-    SM_NONE,
+    SM_NONE = 0,
     SM_ALLOCATION_FAILED,
     SM_ARENA_FULL,
     SM_BUFFER_TOO_SMALL,
