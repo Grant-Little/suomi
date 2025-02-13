@@ -93,16 +93,6 @@ void smHashTableRemove(smHashTable *hash_table, const void *key, size_t key_num_
 bool smHashTableIsFull(smHashTable *hash_table);
 
 typedef struct {
-    void *value;
-    void *next_node;
-    void *previous_node;
-} smLinkedListNode;
-
-smLinkedListNode *smLinkedListInsert(smError *error, smArena *arena, smLinkedListNode *previous_node, void *value);
-void smLinkedListRemove(smLinkedListNode *node_to_remove);
-smLinkedListNode *smLinkedListNodeTraverse(smError *error, smLinkedListNode *start_node, int traverse_steps);
-
-typedef struct {
     uintptr_t contents;
     size_t value_num_bytes;
     size_t num_values;

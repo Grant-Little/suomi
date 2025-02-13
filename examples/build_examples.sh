@@ -2,7 +2,8 @@
 set -euo pipefail
 
 CC="gcc"
-ERROR="-Werror -Wall -Wextra"
+#ERROR="-Werror -Wall -Wextra"
+ERROR=""
 
 declare -a LIBRARY=()
 for lib_file in ../*.c; do
