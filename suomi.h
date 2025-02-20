@@ -79,7 +79,8 @@ typedef struct {
     smHeapDirection direction;
 } smHeap;
 
-smHeap smHeapInit(smError *error, smArena *arena, size_t value_num_bytes, size_t max_num_values, void (*comparison_function_name)(const void *, const void *, size_t), smHeapDirection direction);
+smHeap smHeapInit(smError *error, smArena *arena, size_t value_num_bytes, size_t max_num_values, void (*comparison_function)(const void *, const void *, size_t), smHeapDirection direction);
+smHeap smHeapHeapify(smError *error, smArena *arena, void *values, size_t num_values, size_t value_num_bytes, size_t max_num_values, void (*comparison_function)(const void *, const void *, size_t), smHeapDirection direction); // creates a heap inplace on a given array, (can this even error?)
 void smHeapDeinit(smHeap *heap);
 void smHeapClear(smHeap *heap);
 

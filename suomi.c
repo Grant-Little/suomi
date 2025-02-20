@@ -308,6 +308,51 @@ void *smQueuePeek(smError *error, smQueue *queue) {
     return (void *)(queue->contents + (queue->next_retrieve % queue->num_values) * queue->value_num_bytes);
 }
 
+#define SM_HEAP_INDEX_LEFT(idx) (2 * idx + 1)
+#define SM_HEAP_INDEX_RIGHT(idx) (2 * idx + 2)
+#define SM_HEAP_INDEX_PARENT(idx) ((idx - 1) / 2)
+
+smHeap smHeapInit(smError *error, smArena *arena, size_t value_num_bytes, size_t max_num_values, void (*comparison_function)(const void *, const void *, size_t), smHeapDirection direction) {
+    smHeap heap = {
+        .contents = 0,
+        .value_num_bytes = 0,
+        .current_num_values = 0,
+        .max_num_values = 0,
+        .comparison_function = NULL,
+        .direction = 0,
+    };
+
+    size_t bytes_to_push = value_num_bytes * max_num_values;
+    uintptr_t push_result = (uintptr_t)smArenaPush(error, arena, bytes_to_push);
+#ifndef SM_ASSURE
+    if (!error) {
+        return heap;
+    }
+#endif
+
+    heap.contents = push_result;
+    heap.value_num_bytes = value_num_bytes;
+    heap.max_num_values = max_num_values;
+    heap.comparison_function = comparison_function;
+    heap.direction = direction;
+
+    return heap;
+}
+
+void smHeapDeinit(smHeap *heap) {
+    heap->contents = 0;
+    heap->value_num_bytes = 0;
+    heap->current_num_values = 0;
+    heap->max_num_values = 0;
+    heap->comparison_function = NULL;
+    heap->direction = 0;
+}
+
+void smHeapClear(smHeap *heap) {
+    memset((void *)heap->contents, 0, heap->value_num_bytes * heap->max_num_buckets);
+    heap->current_num_values = 0;
+}
+
 bool smIsMemZeroed(const void *mem, size_t num_bytes) {
     for (size_t i = 0; i < num_bytes; i++) {
         if (((uint8_t *)mem)[i] != 0) {
@@ -316,7 +361,3 @@ bool smIsMemZeroed(const void *mem, size_t num_bytes) {
     }
     return true;
 }
-
-#define SM_HEAP_INDEX_LEFT(idx) (2 * idx + 1)
-#define SM_HEAP_INDEX_RIGHT(idx) (2 * idx + 2)
-#define SM_HEAP_INDEX_PARENT(idx) ((idx - 1) / 2)
