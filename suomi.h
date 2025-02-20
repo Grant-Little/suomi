@@ -65,4 +65,27 @@ void *smQueueRetrieve(smError *error, smQueue *queue);
 void *smQueuePeek(smError *error, smQueue *queue);
 bool smQueueIsFull(smQueue *queue);
 
+typedef enum {
+    SM_HEAP_MAX,
+    SM_HEAP_MIN,
+} smHeapDirection;
+
+typedef struct {
+    uintptr_t contents;
+    size_t value_num_bytes;
+    size_t current_num_values;
+    size_t max_num_values;
+    void (*comparison_function)(const void *, const void *, size_t);
+    smHeapDirection direction;
+} smHeap;
+
+smHeap smHeapInit(smError *error, smArena *arena, size_t value_num_bytes, size_t max_num_values, void (*comparison_function_name)(const void *, const void *, size_t), smHeapDirection direction);
+void smHeapDeinit(smHeap *heap);
+void smHeapClear(smHeap *heap);
+
+void smHeapInsert(smError *error, smHeap *heap, void *value);
+void *smHeapRetrieve(smError *error, smHeap *heap);
+void *smHeapPeek(smError *error, smHeap *heap);
+bool smHeapIsFull(smError *error, smHeap *heap);
+
 #endif

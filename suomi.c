@@ -316,3 +316,7 @@ bool smIsMemZeroed(const void *mem, size_t num_bytes) {
     }
     return true;
 }
+
+#define SM_HEAP_INDEX_LEFT(idx) (2 * idx + 1)
+#define SM_HEAP_INDEX_RIGHT(idx) (2 * idx + 2)
+#define SM_HEAP_INDEX_PARENT(idx) ((idx - 1) / 2)
