@@ -52,8 +52,8 @@ typedef struct {
     uintptr_t contents;
     size_t value_num_bytes;
     size_t num_values;
-    uintptr_t front;
-    uintptr_t end;
+    ptrdiff_t next_insert;
+    ptrdiff_t next_retrieve;
 } smQueue;
 
 smQueue smQueueInit(smError *error, smArena *arena, size_t value_num_bytes, size_t num_values);

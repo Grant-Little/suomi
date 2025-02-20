@@ -124,7 +124,7 @@ smHashTable smHashTableInit(smError *error, smArena *arena, size_t value_num_byt
 
     uintptr_t push_result = (uintptr_t)smArenaPush(error, arena, bytes_to_push);
 #ifndef SM_ASSURE
-    if (!push_result) {
+    if (!error) {
         return hash_table;
     }
 #endif
@@ -233,31 +233,28 @@ uint32_t smHashInternalProbe(const smHashTable *hash_table, uint32_t hash, uint3
     return index;
 }
 
-#define SM_QUEUE_WILL_FRONT_OVERRUN(que) (que->front == (que->contents + que->value_num_bytes * (que->num_values - 1)))
-#define SM_QUEUE_WILL_END_OVERRUN(que) (que->end == (que->contents + que->value_num_bytes * (que->num_values - 1)))
+#define SM_QUEUE_IS_FULL(que) ((que->next_insert % que->num_values) == ((que->next_retrieve % que->num_values) - 1))
+#define SM_QUEUE_IS_EMPTY(que) (que->next_insert == que->next_retrieve)
 
 smQueue smQueueInit(smError *error, smArena *arena, size_t value_num_bytes, size_t num_values) {
     smQueue queue = {
         .contents = 0,
         .value_num_bytes = 0,
         .num_values = 0,
-        .front = 0,
-        .end = 0,
+        .next_insert = 0,
+        .next_retrieve = 0,
     };
 
     size_t bytes_to_push = value_num_bytes * num_values;
     uintptr_t push_result = (uintptr_t)smArenaPush(error, arena, bytes_to_push);
 #ifndef SM_ASSURE
-    if (!push_result) {
-        *error = SM_ARENA_FULL;
+    if (!error) {
         return queue;
     }
 #endif
     queue.contents = push_result;
     queue.value_num_bytes = value_num_bytes;
     queue.num_values = num_values;
-    queue.front = push_result;
-    queue.end = push_result;
 
     return queue;
 }
@@ -266,77 +263,49 @@ void smQueueDeinit(smQueue *queue) {
     queue->contents = 0;
     queue->value_num_bytes = 0;
     queue->num_values = 0;
-    queue->front = 0;
-    queue->end = 0;
+    queue->next_insert = 0;
+    queue->next_retrieve = 0;
 }
 
 void smQueueClear(smQueue *queue) {
-    queue->front = queue->contents;
-    queue->end = queue->contents;
+    memset((void *)queue->contents, 0, queue->value_num_bytes * queue->num_values);
+    queue->next_insert = 0;
+    queue->next_retrieve = 0;
 }
 
 void smQueueInsert(smError *error, smQueue *queue, void *value) {
-    uintptr_t next_end_pos;
-    if (SM_QUEUE_WILL_END_OVERRUN(queue)) {
-        next_end_pos = queue->contents;
-    } else {
-        next_end_pos = queue->end + queue->value_num_bytes;
-    }
-
 #ifndef SM_ASSURE
-    if (next_end_pos == queue->front) {
+    if (SM_QUEUE_IS_FULL(queue)) {
         *error = SM_BUFFER_TOO_SMALL;
         return;
     }
 #endif
-
-    queue->end = next_end_pos;
-    memcpy((void *)queue->end, value, queue->value_num_bytes);
-    return;
+    
+    memcpy((void *)(queue->contents + (queue->next_insert % queue->num_values) * queue->value_num_bytes), value, queue->value_num_bytes);
+    queue->next_insert += 1;
 }
 
 void *smQueueRetrieve(smError *error, smQueue *queue) {
 #ifndef SM_ASSURE
-    if (queue->front == queue->end) {
+    if (SM_QUEUE_IS_EMPTY(queue)) {
         *error = SM_REQUESTED_NULL;
         return NULL;
     }
 #endif
 
-    uintptr_t last_front_pos = queue->front;
-    if (SM_QUEUE_WILL_FRONT_OVERRUN(queue)) {
-        queue->front = queue->contents;
-    } else {
-        queue->front += queue->value_num_bytes;
-    }
-
-    return (void *)last_front_pos;
+    queue->next_retrieve += 1;
+    return (void *)(queue->contents + ((queue->next_retrieve - 1) % queue->num_values) * queue->value_num_bytes);
 }
 
 void *smQueuePeek(smError *error, smQueue *queue) {
-#ifndef SM_ASSURe
-    if (queue->front == queue->end) {
+#ifndef SM_ASSURE
+    if (SM_QUEUE_IS_EMPTY(queue)) {
         *error = SM_REQUESTED_NULL;
         return NULL;
     }
 #endif
 
-    return (void *)queue->front;
-}
-
-bool smQueueIsFull(smQueue *queue) {
-    uintptr_t next_end_pos;
-    if (SM_QUEUE_WILL_END_OVERRUN(queue)) {
-        next_end_pos = queue->contents;
-    } else {
-        next_end_pos = queue->end + queue->value_num_bytes;
-    }
-
-    if (next_end_pos == queue->front) {
-        return true;
-    } else {
-        return false;
-    }
+    return (void *)(queue->contents + (queue->next_retrieve % queue->num_values) * queue->value_num_bytes);
 }
 
 bool smIsMemZeroed(const void *mem, size_t num_bytes) {
