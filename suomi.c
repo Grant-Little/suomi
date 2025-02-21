@@ -3,10 +3,10 @@
 #include <string.h>
 #include <stdio.h> 
 
-bool smIsMemZeroed(const void *mem, size_t num_bytes);
+bool sm_is_mem_zeroed(const void *mem, size_t num_bytes);
 
-smArena smArenaInit(smError *error, size_t num_bytes) {
-    smArena arena = {
+sm_Arena sm_arena_init(sm_Error *error, size_t num_bytes) {
+    sm_Arena arena = {
         .start_pos = 0,
         .end_pos = 0,
         .current_pos = 0,
@@ -25,18 +25,18 @@ smArena smArenaInit(smError *error, size_t num_bytes) {
     return arena;
 }
 
-void smArenaDeinit(smArena *arena) {
+void sm_arena_deinit(sm_Arena *arena) {
     free((void *)(arena->start_pos));
     arena->start_pos = 0;
     arena->end_pos = 0;
     arena->current_pos = 0;
 }
 
-void smArenaClear(smArena *arena) {
+void sm_arena_clear(sm_Arena *arena) {
     arena->current_pos = arena->start_pos;
 }
 
-void *smArenaPush(smError *error, smArena *arena, size_t num_bytes) {
+void *sm_arena_push(sm_Error *error, sm_Arena *arena, size_t num_bytes) {
 #ifndef SM_ASSURE
     if ((arena->current_pos + num_bytes) > arena->end_pos) {
         *error = SM_ARENA_FULL;
@@ -47,7 +47,7 @@ void *smArenaPush(smError *error, smArena *arena, size_t num_bytes) {
     return (void *)(arena->current_pos - num_bytes);
 }
 
-void smArenaPop(smArena *arena, size_t num_bytes) {
+void sm_arena_pop(sm_Arena *arena, size_t num_bytes) {
     arena->current_pos -= num_bytes;
     if (arena->current_pos < arena->start_pos) {
         arena->current_pos = arena->start_pos;
@@ -62,7 +62,7 @@ void smArenaPop(smArena *arena, size_t num_bytes) {
 #define SM_HASH_DJB_OFFSET_32 5381u
 #define SM_HASH_DJB_SHIFT_32 5u
 
-#define SM_HASH_FUNCTION smHashFnv1a32
+#define SM_HASH_FUNCTION sm_hash_fnv1a32
 
 #define SM_HASH_TABLE_GET_BUCKET_HASH(bkt) (*((uint32_t *)bkt))
 
@@ -72,9 +72,9 @@ void smArenaPop(smArena *arena, size_t num_bytes) {
 
 #define SM_HASH_TABLE_DELETE_BUCKET(tbl, idx) (*(uint32_t *)SM_HASH_TABLE_INDEX_TABLE(tbl, idx) = UINT32_MAX)
 
-uint32_t smHashInternalProbe(const smHashTable *hash_table, uint32_t hash, uint32_t index);
+uint32_t sm_hash_internal_probe(const sm_Hash_Table *hash_table, uint32_t hash, uint32_t index);
 
-uint32_t smHashFnv1a32(const void *data, size_t data_num_bytes) {
+uint32_t sm_hash_fnv1a32(const void *data, size_t data_num_bytes) {
     uint32_t hash = SM_HASH_FNV_OFFSET_32;
 
     for (size_t i = 0; i < data_num_bytes; i++) {
@@ -93,7 +93,7 @@ uint32_t smHashFnv1a32(const void *data, size_t data_num_bytes) {
     return hash;
 }
 
-uint32_t smHashDjb32(const void *data, size_t data_num_bytes) {
+uint32_t sm_hash_djb32(const void *data, size_t data_num_bytes) {
     uint32_t hash = SM_HASH_DJB_OFFSET_32;
 
     for (size_t i = 0; i < data_num_bytes; i++) {
@@ -111,8 +111,8 @@ uint32_t smHashDjb32(const void *data, size_t data_num_bytes) {
     return hash;
 }
 
-smHashTable smHashTableInit(smError *error, smArena *arena, size_t value_num_bytes, size_t expected_num_buckets) {
-    smHashTable hash_table = {
+sm_Hash_Table sm_hash_table_init(sm_Error *error, sm_Arena *arena, size_t value_num_bytes, size_t expected_num_buckets) {
+    sm_Hash_Table hash_table = {
         .buckets = 0,
         .bucket_num_bytes = 0,
         .max_num_buckets = 0,
@@ -122,7 +122,7 @@ smHashTable smHashTableInit(smError *error, smArena *arena, size_t value_num_byt
     size_t table_max_num_buckets = expected_num_buckets * 100u / SM_HASH_LOAD_FACTOR;
     size_t bytes_to_push = table_max_num_buckets * (value_num_bytes + sizeof(uint32_t));
 
-    uintptr_t push_result = (uintptr_t)smArenaPush(error, arena, bytes_to_push);
+    uintptr_t push_result = (uintptr_t)sm_arena_push(error, arena, bytes_to_push);
 #ifndef SM_ASSURE
     if (!error) {
         return hash_table;
@@ -135,19 +135,19 @@ smHashTable smHashTableInit(smError *error, smArena *arena, size_t value_num_byt
     return hash_table;
 }
 
-void smHashTableDeinit(smHashTable *hash_table) {
+void sm_hash_table_deinit(sm_Hash_Table *hash_table) {
     hash_table->buckets = 0;
     hash_table->bucket_num_bytes = 0;
     hash_table->max_num_buckets = 0;
     hash_table->num_used_buckets = 0;
 }
 
-void smHashTableClear(smHashTable *hash_table) {
+void sm_hash_table_clear(sm_Hash_Table *hash_table) {
     memset((void *)hash_table->buckets, 0, hash_table->max_num_buckets * hash_table->bucket_num_bytes);
     hash_table->num_used_buckets = 0;
 }
 
-void smHashTableInsert(smError *error, smHashTable *hash_table, const void *key, size_t key_num_bytes, const void *value) {
+void sm_hash_table_insert(sm_Error *error, sm_Hash_Table *hash_table, const void *key, size_t key_num_bytes, const void *value) {
 #ifndef SM_ASSURE
     if (hash_table->num_used_buckets >= hash_table->max_num_buckets) {
         *error = SM_BUFFER_TOO_SMALL;
@@ -158,7 +158,7 @@ void smHashTableInsert(smError *error, smHashTable *hash_table, const void *key,
     uint32_t index = hash % hash_table->max_num_buckets;
 
     if (SM_HASH_TABLE_IS_OCCUPIED_INDEX(hash_table, index, hash)) {
-        index = smHashInternalProbe(hash_table, hash, index);
+        index = sm_hash_internal_probe(hash_table, hash, index);
     }
 
     void *bucket_ptr = (void *)SM_HASH_TABLE_INDEX_TABLE(hash_table, index);
@@ -168,18 +168,18 @@ void smHashTableInsert(smError *error, smHashTable *hash_table, const void *key,
     return;
 }
 
-void *smHashTableRetrieve(const smHashTable *hash_table, const void *key, size_t key_num_bytes) {
+void *sm_hash_table_retrieve(const sm_Hash_Table *hash_table, const void *key, size_t key_num_bytes) {
     uint32_t hash = SM_HASH_FUNCTION(key, key_num_bytes);
     uint32_t index = hash % hash_table->max_num_buckets;
 
     if (SM_HASH_TABLE_IS_OCCUPIED_INDEX(hash_table, index, hash)) {
-        index = smHashInternalProbe(hash_table, hash, index);
+        index = sm_hash_internal_probe(hash_table, hash, index);
     }
 
     return (void *)(SM_HASH_TABLE_INDEX_TABLE(hash_table, index) + sizeof(uint32_t));
 }
 
-void smHashTableRemove(smHashTable *hash_table, const void *key, size_t key_num_bytes) {
+void sm_hash_table_remove(sm_Hash_Table *hash_table, const void *key, size_t key_num_bytes) {
 #ifndef SM_ASSURE
     if (hash_table->num_used_buckets == 0) {
         return;
@@ -208,7 +208,7 @@ void smHashTableRemove(smHashTable *hash_table, const void *key, size_t key_num_
     return;
 }
 
-bool smHashTableIsFull(smHashTable *hash_table) {
+bool sm_hash_table_is_full(const sm_Hash_Table *hash_table) {
     if (hash_table->num_used_buckets == hash_table->max_num_buckets) {
         return true;
     } else {
@@ -216,7 +216,7 @@ bool smHashTableIsFull(smHashTable *hash_table) {
     }
 }
 
-uint32_t smHashInternalProbe(const smHashTable *hash_table, uint32_t hash, uint32_t index) {
+uint32_t sm_hash_internal_probe(const sm_Hash_Table *hash_table, uint32_t hash, uint32_t index) {
     uint32_t internal_probe = hash % (hash_table->max_num_buckets - 1);
     while (1) {
         index += internal_probe;
@@ -236,8 +236,8 @@ uint32_t smHashInternalProbe(const smHashTable *hash_table, uint32_t hash, uint3
 #define SM_QUEUE_IS_FULL(que) ((que->next_insert % que->num_values) == ((que->next_retrieve % que->num_values) - 1))
 #define SM_QUEUE_IS_EMPTY(que) (que->next_insert == que->next_retrieve)
 
-smQueue smQueueInit(smError *error, smArena *arena, size_t value_num_bytes, size_t num_values) {
-    smQueue queue = {
+sm_Queue sm_queue_init(sm_Error *error, sm_Arena *arena, size_t value_num_bytes, size_t num_values) {
+    sm_Queue queue = {
         .contents = 0,
         .value_num_bytes = 0,
         .num_values = 0,
@@ -246,7 +246,7 @@ smQueue smQueueInit(smError *error, smArena *arena, size_t value_num_bytes, size
     };
 
     size_t bytes_to_push = value_num_bytes * num_values;
-    uintptr_t push_result = (uintptr_t)smArenaPush(error, arena, bytes_to_push);
+    uintptr_t push_result = (uintptr_t)sm_arena_push(error, arena, bytes_to_push);
 #ifndef SM_ASSURE
     if (!error) {
         return queue;
@@ -259,7 +259,7 @@ smQueue smQueueInit(smError *error, smArena *arena, size_t value_num_bytes, size
     return queue;
 }
 
-void smQueueDeinit(smQueue *queue) {
+void sm_queue_deinit(sm_Queue *queue) {
     queue->contents = 0;
     queue->value_num_bytes = 0;
     queue->num_values = 0;
@@ -267,13 +267,13 @@ void smQueueDeinit(smQueue *queue) {
     queue->next_retrieve = 0;
 }
 
-void smQueueClear(smQueue *queue) {
+void sm_queue_clear(sm_Queue *queue) {
     memset((void *)queue->contents, 0, queue->value_num_bytes * queue->num_values);
     queue->next_insert = 0;
     queue->next_retrieve = 0;
 }
 
-void smQueueInsert(smError *error, smQueue *queue, void *value) {
+void sm_queue_insert(sm_Error *error, sm_Queue *queue, void *value) {
 #ifndef SM_ASSURE
     if (SM_QUEUE_IS_FULL(queue)) {
         *error = SM_BUFFER_TOO_SMALL;
@@ -285,7 +285,7 @@ void smQueueInsert(smError *error, smQueue *queue, void *value) {
     queue->next_insert += 1;
 }
 
-void *smQueueRetrieve(smError *error, smQueue *queue) {
+void *sm_queue_retrieve(sm_Error *error, sm_Queue *queue) {
 #ifndef SM_ASSURE
     if (SM_QUEUE_IS_EMPTY(queue)) {
         *error = SM_REQUESTED_NULL;
@@ -293,11 +293,11 @@ void *smQueueRetrieve(smError *error, smQueue *queue) {
     }
 #endif
 
-    queue->next_retrieve += 1;
+    queue->next_retrieve++;
     return (void *)(queue->contents + ((queue->next_retrieve - 1) % queue->num_values) * queue->value_num_bytes);
 }
 
-void *smQueuePeek(smError *error, smQueue *queue) {
+void *sm_queue_peek(sm_Error *error, const sm_Queue *queue) {
 #ifndef SM_ASSURE
     if (SM_QUEUE_IS_EMPTY(queue)) {
         *error = SM_REQUESTED_NULL;
@@ -312,18 +312,18 @@ void *smQueuePeek(smError *error, smQueue *queue) {
 #define SM_HEAP_INDEX_RIGHT(idx) (2 * idx + 2)
 #define SM_HEAP_INDEX_PARENT(idx) ((idx - 1) / 2)
 
-smHeap smHeapInit(smError *error, smArena *arena, size_t value_num_bytes, size_t max_num_values, void (*comparison_function)(const void *, const void *, size_t), smHeapDirection direction) {
-    smHeap heap = {
+sm_Heap sm_heap_init(sm_Error *error, sm_Arena *arena, size_t value_num_bytes, size_t max_num_values, void (*comparison_function)(const void *, const void *, size_t), sm_Heap_Type max_or_min) {
+    sm_Heap heap = {
         .contents = 0,
         .value_num_bytes = 0,
         .current_num_values = 0,
         .max_num_values = 0,
         .comparison_function = NULL,
-        .direction = 0,
+        .type = 0,
     };
 
     size_t bytes_to_push = value_num_bytes * max_num_values;
-    uintptr_t push_result = (uintptr_t)smArenaPush(error, arena, bytes_to_push);
+    uintptr_t push_result = (uintptr_t)sm_arena_push(error, arena, bytes_to_push);
 #ifndef SM_ASSURE
     if (!error) {
         return heap;
@@ -334,26 +334,26 @@ smHeap smHeapInit(smError *error, smArena *arena, size_t value_num_bytes, size_t
     heap.value_num_bytes = value_num_bytes;
     heap.max_num_values = max_num_values;
     heap.comparison_function = comparison_function;
-    heap.direction = direction;
+    heap.type = max_or_min;
 
     return heap;
 }
 
-void smHeapDeinit(smHeap *heap) {
+void sm_heap_deinit(sm_Heap *heap) {
     heap->contents = 0;
     heap->value_num_bytes = 0;
     heap->current_num_values = 0;
     heap->max_num_values = 0;
     heap->comparison_function = NULL;
-    heap->direction = 0;
+    heap->type = 0;
 }
 
-void smHeapClear(smHeap *heap) {
-    memset((void *)heap->contents, 0, heap->value_num_bytes * heap->max_num_buckets);
+void sm_heap_clear(sm_Heap *heap) {
+    memset((void *)heap->contents, 0, heap->value_num_bytes * heap->max_num_values);
     heap->current_num_values = 0;
 }
 
-bool smIsMemZeroed(const void *mem, size_t num_bytes) {
+bool sm_is_mem_zeroed(const void *mem, size_t num_bytes) {
     for (size_t i = 0; i < num_bytes; i++) {
         if (((uint8_t *)mem)[i] != 0) {
             return false;

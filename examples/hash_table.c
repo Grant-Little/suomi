@@ -3,24 +3,24 @@
 #include <string.h>
 
 int main() {
-    smError error = SM_NONE;
-    smArena arena = smArenaInit(&error, 10000);
+    sm_Error err = SM_NONE;
+    sm_Arena arena = sm_arena_init(&err, 10000);
 
     // make a has table that stores integers, and that we expect to hold 100 integers
-    smHashTable table = smHashTableInit(&error, &arena, sizeof(int), 100);
-    assert(error == 0);
+    sm_Hash_Table table = sm_hash_table_init(&err, &arena, sizeof(int), 100);
+    assert(!err);
 
     const char *key1 = "a string key";
     int val1 = 52;
     float key2 = 1.0f;
     int val2 = 52;
 
-    smHashTableInsert(&error, &table, key1, strlen(key1), &val1);
+    sm_hash_table_insert(&err, &table, key1, strlen(key1), &val1);
 
-    smHashTableInsert(&error, &table, &key2, sizeof(key2), &val2);
-    assert(error == 0);
+    sm_hash_table_insert(&err, &table, &key2, sizeof(key2), &val2);
+    assert(!err);
 
-    assert(*(int *)smHashTableRetrieve(&table, key1, strlen(key1)) == *(int *)smHashTableRetrieve(&table, &key2, sizeof(key2)));
+    assert(*(int *)sm_hash_table_retrieve(&table, key1, strlen(key1)) == *(int *)sm_hash_table_retrieve(&table, &key2, sizeof(key2)));
 
     return 0;
 }

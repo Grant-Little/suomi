@@ -12,41 +12,41 @@ typedef enum {
     SM_BUFFER_TOO_SMALL,
     SM_INDEX_OUT_OF_BOUNDS,
     SM_REQUESTED_NULL,
-} smError;
+} sm_Error;
 
 typedef struct {
     uintptr_t start_pos;
     uintptr_t end_pos;
     uintptr_t current_pos;
-} smArena;
+} sm_Arena;
 
-smArena smArenaInit(smError *error, size_t num_bytes);
-void smArenaDeinit(smArena *arena);
-void smArenaClear(smArena *arena);
-void *smArenaPush(smError *error, smArena *arena, size_t num_bytes);
-void smArenaPop(smArena *arena, size_t num_bytes);
+sm_Arena sm_arena_init(sm_Error *error, size_t num_bytes);
+void sm_arena_deinit(sm_Arena *arena);
+void sm_arena_clear(sm_Arena *arena);
+void *sm_arena_push(sm_Error *error, sm_Arena *arena, size_t num_bytes);
+void sm_arena_pop(sm_Arena *arena, size_t num_bytes);
 
 typedef struct {
     uintptr_t buckets;
     size_t bucket_num_bytes;
     uint32_t max_num_buckets;
     uint32_t num_used_buckets;
-} smHashTable;
+} sm_Hash_Table;
 
 // default hash function
-uint32_t smHashFnv1a32(const void *data, size_t data_num_bytes);
+uint32_t sm_hash_fnv1a32(const void *data, size_t data_num_bytes);
 
 // extra hash functions
-uint32_t smHashDjb32(const void *data, size_t data_num_bytes);
+uint32_t sm_hash_djb32(const void *data, size_t data_num_bytes);
 
-smHashTable smHashTableInit(smError *error, smArena *arena, size_t value_num_bytes, size_t expected_num_values);
-void smHashTableDeinit(smHashTable *hash_table);
-void smHashTableClear(smHashTable *hash_table);
+sm_Hash_Table sm_hash_table_init(sm_Error *error, sm_Arena *arena, size_t value_num_bytes, size_t expected_num_values);
+void sm_hash_table_deinit(sm_Hash_Table *hash_table);
+void sm_hash_table_clear(sm_Hash_Table *hash_table);
 
-void smHashTableInsert(smError *error, smHashTable *hash_table, const void *key, size_t key_num_bytes, const void *value);
-void *smHashTableRetrieve(const smHashTable *hash_table, const void *key, size_t key_num_bytes);
-void smHashTableRemove(smHashTable *hash_table, const void *key, size_t key_num_bytes);
-bool smHashTableIsFull(smHashTable *hash_table);
+void sm_hash_table_insert(sm_Error *error, sm_Hash_Table *hash_table, const void *key, size_t key_num_bytes, const void *value);
+void *sm_hash_table_retrieve(const sm_Hash_Table *hash_table, const void *key, size_t key_num_bytes);
+void sm_hash_table_remove(sm_Hash_Table *hash_table, const void *key, size_t key_num_bytes);
+bool sm_hash_table_is_full(const sm_Hash_Table *hash_table);
 
 typedef struct {
     uintptr_t contents;
@@ -54,21 +54,21 @@ typedef struct {
     size_t num_values;
     ptrdiff_t next_insert;
     ptrdiff_t next_retrieve;
-} smQueue;
+} sm_Queue;
 
-smQueue smQueueInit(smError *error, smArena *arena, size_t value_num_bytes, size_t num_values);
-void smQueueDeinit(smQueue *queue);
-void smQueueClear(smQueue *queue);
+sm_Queue sm_queue_init(sm_Error *error, sm_Arena *arena, size_t value_num_bytes, size_t num_values);
+void sm_queue_deinit(sm_Queue *queue);
+void sm_queue_clear(sm_Queue *queue);
 
-void smQueueInsert(smError *error, smQueue *queue, void *value);
-void *smQueueRetrieve(smError *error, smQueue *queue);
-void *smQueuePeek(smError *error, smQueue *queue);
-bool smQueueIsFull(smQueue *queue);
+void sm_queue_insert(sm_Error *error, sm_Queue *queue, void *value);
+void *sm_queue_retrieve(sm_Error *error, sm_Queue *queue);
+void *sm_queue_peek(sm_Error *error, const sm_Queue *queue);
+bool sm_queue_is_full(const sm_Queue *queue);
 
 typedef enum {
     SM_HEAP_MAX,
     SM_HEAP_MIN,
-} smHeapDirection;
+} sm_Heap_Type;
 
 typedef struct {
     uintptr_t contents;
@@ -76,17 +76,17 @@ typedef struct {
     size_t current_num_values;
     size_t max_num_values;
     void (*comparison_function)(const void *, const void *, size_t);
-    smHeapDirection direction;
-} smHeap;
+    sm_Heap_Type type;
+} sm_Heap;
 
-smHeap smHeapInit(smError *error, smArena *arena, size_t value_num_bytes, size_t max_num_values, void (*comparison_function)(const void *, const void *, size_t), smHeapDirection direction);
-smHeap smHeapHeapify(smError *error, smArena *arena, void *values, size_t num_values, size_t value_num_bytes, size_t max_num_values, void (*comparison_function)(const void *, const void *, size_t), smHeapDirection direction); // creates a heap inplace on a given array, (can this even error?)
-void smHeapDeinit(smHeap *heap);
-void smHeapClear(smHeap *heap);
+sm_Heap sm_heap_init(sm_Error *error, sm_Arena *arena, size_t value_num_bytes, size_t max_num_values, void (*comparison_function)(const void *, const void *, size_t), sm_Heap_Type max_or_min);
+sm_Heap sm_heap_heapify(sm_Error *error, sm_Arena *arena, void *values, size_t num_values, size_t value_num_bytes, size_t max_num_values, void (*comparison_function)(const void *, const void *, size_t), sm_Heap_Type max_or_min); // creates a heap inplace on a given array, (can this even error?)
+void sm_heap_deinit(sm_Heap *heap);
+void sm_heap_clear(sm_Heap *heap);
 
-void smHeapInsert(smError *error, smHeap *heap, void *value);
-void *smHeapRetrieve(smError *error, smHeap *heap);
-void *smHeapPeek(smError *error, smHeap *heap);
-bool smHeapIsFull(smError *error, smHeap *heap);
+void sm_heap_insert(sm_Error *error, sm_Heap *heap, void *value);
+void *sm_heap_retrieve(sm_Error *error, sm_Heap *heap);
+void *sm_heap_peek(sm_Error *error, const sm_Heap *heap);
+bool sm_heap_is_full(sm_Error *error, const sm_Heap *heap);
 
 #endif

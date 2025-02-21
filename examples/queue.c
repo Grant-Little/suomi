@@ -2,25 +2,25 @@
 #include <assert.h>
 
 int main() {
-    smError error = 0;
-    smArena arena = smArenaInit(&error, 5000);
-    assert(!error);
+    sm_Error err = 0;
+    sm_Arena arena = sm_arena_init(&err, 5000);
+    assert(!err);
 
-    smQueue queue_of_ints = smQueueInit(&error, &arena, sizeof(int), 100);
-    assert(!error);
+    sm_Queue queue_of_ints = sm_queue_init(&err, &arena, sizeof(int), 100);
+    assert(!err);
 
     int val1 = 420;
     int val2 = 69;
     int val3 = 911;
 
-    smQueueInsert(&error, &queue_of_ints, &val1);
-    smQueueInsert(&error, &queue_of_ints, &val2);
-    smQueueInsert(&error, &queue_of_ints, &val3);
-    assert(!error);
+    sm_queue_insert(&err, &queue_of_ints, &val1);
+    sm_queue_insert(&err, &queue_of_ints, &val2);
+    sm_queue_insert(&err, &queue_of_ints, &val3);
+    assert(!err);
 
-    int *result = smQueueRetrieve(&error, &queue_of_ints);
-    assert(!error);
+    int *result = sm_queue_retrieve(&err, &queue_of_ints);
+    assert(!err);
     assert(*result == val1);
 
-    smArenaDeinit(&arena);
+    sm_arena_deinit(&arena);
 }
