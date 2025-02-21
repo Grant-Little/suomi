@@ -1,7 +1,6 @@
 #include "suomi.h"
 #include <stdlib.h>
 #include <string.h>
-//#include <stdio.h> 
 
 bool sm_is_mem_zeroed(const void *mem, size_t num_bytes);
 
